@@ -409,7 +409,7 @@ private actor PhoneStreamingEngine {
 }
 
 /// Per-run resources ensure an asynchronous overload stop cannot stop a newer mic.
-private final class SpeechCaptureRun: @unchecked Sendable {
+final class SpeechCaptureRun: @unchecked Sendable {
     let mic: MicCapture
     let recording = RecordingAudioSink()
     let backlog = AudioBacklog()
