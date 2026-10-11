@@ -11,6 +11,13 @@ release-please drafts each section from conventional commits and opens a release
 PR. Rewrite those generated lines in the PR into concise prose a person should
 read in an update panel before merging it.
 
+## [0.6.1](https://github.com/bshk-app/murmur/compare/murmur-v0.6.0...murmur-v0.6.1) (2026-10-11)
+
+
+### Fixed
+
+* **whistle:** make the frontend window compile on Swift 6.3 ([e2970ca](https://github.com/bshk-app/murmur/commit/e2970caa396993fd922dbdd4ccf7cf4d96cd779e))
+
 ## [0.6.0](https://github.com/bshk-app/murmur/compare/murmur-v0.5.0...murmur-v0.6.0) (2026-10-11)
 
 ### Added
