@@ -78,9 +78,20 @@ final class CaptionTranslationOrderingTests: XCTestCase {
         UserDefaults.standard.set("en", forKey: SpeechLanguage.defaultsKey)
         UserDefaults.standard.set(TranslationSetting.off, forKey: TranslationSetting.key)
         let session = FakeDictationSession()
+        var release: (() -> Void)?
+        session.startGate = {
+            await withCheckedContinuation { continuation in release = { continuation.resume() } }
+        }
         let controller = DictationController(session: session)
         controller.beginRecording(submit: false)
+        // Release during microphone opening, not during model preparation.
+        for _ in 0..<500 {
+            if release != nil { break }
+            await Task.yield()
+        }
+        XCTAssertNotNil(release)
         controller.endRecording()
+        release?()
         await controller.recordingTask?.value
         await controller.recordingTask?.value
         XCTAssertEqual(session.startCount, 1)

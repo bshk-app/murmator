@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import CryptoKit
 import MurmurCore
 import MurmurSpeech
@@ -18,9 +19,12 @@ struct Report: Codable {
     let replayAudioSHA256: String
     let audioSeconds: Double
     var status = "preparing"
+    var speechProfile: [String: String] = [:]
+    var utterances: [RecordedUtterance] = []
     var preparationSeconds: Double?
     var wallSeconds = 0.0
     var firstSnapshotSeconds: Double?
+    var firstSnapshotText: String?
     var firstTranslationSeconds: Double?
     var snapshotCount = 0
     var translationCount = 0
@@ -29,6 +33,18 @@ struct Report: Codable {
     var capturedSeconds = 0.0
     var failures: [FailureRecord] = []
     var metrics: [MetricSample] = []
+    var latestSpeechTelemetry: SpeechQualificationSnapshot?
+    var processPeakRSSBytes: Int?
+    var speechComputeSeconds: Double?
+    var speechReplayWallSeconds: Double?
+    var replayCPUSeconds: Double?
+}
+
+func processCPUSeconds() -> Double {
+    var usage = rusage()
+    guard getrusage(RUSAGE_SELF, &usage) == 0 else { return 0 }
+    return Double(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec)
+        + Double(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) / 1_000_000
 }
 
 func readWAV(_ data: Data) throws -> [Float] {
@@ -107,11 +123,16 @@ func readWAV(_ data: Data) throws -> [Float] {
             switch event {
             case .snapshot(let value):
                 report.snapshotCount += 1
-                if report.firstSnapshotSeconds == nil, !value.provisional.isEmpty || !value.confirmed.isEmpty { report.firstSnapshotSeconds = elapsed }
+                if report.firstSnapshotSeconds == nil, !value.provisional.isEmpty || !value.confirmed.isEmpty {
+                    report.firstSnapshotSeconds = elapsed
+                    report.firstSnapshotText = (value.confirmed.map(\.text) + [value.provisional])
+                        .filter { !$0.isEmpty }.joined(separator: " ")
+                }
             case .translation(let text, _):
                 report.translationCount += 1
                 if report.firstTranslationSeconds == nil, !text.isEmpty { report.firstTranslationSeconds = elapsed }
             case .telemetry(let value):
+                report.latestSpeechTelemetry = value
                 if elapsed - lastMetric >= 1 { report.metrics.append(.init(seconds: elapsed, speech: value)); lastMetric = elapsed }
             case .failure(let value): report.failures.append(.init(seconds: elapsed, message: String(describing: value)))
             default: break
@@ -129,12 +150,20 @@ func readWAV(_ data: Data) throws -> [Float] {
         }
         defer { checkpoint.cancel() }
         do {
-            try await session.prepare(.init(profile: SpeechRecognitionProfile.resolve(language: source, mode: mode), target: target))
+            let preview: SpeechRecognitionProfile.PreviewBackend = ProcessInfo.processInfo.environment["MURMUR_WHISTLE_CPU"] == "1" ? .whistle : .nemotron
+            let profile = try SpeechRecognitionProfile.resolve(language: source, mode: mode, previewBackend: preview)
+            report.speechProfile = profile.diagnostics
+            try await session.prepare(.init(profile: profile, target: target))
             report.preparationSeconds = ProcessInfo.processInfo.systemUptime - began
             report.status = "replaying"; try write()
             recordingBegan = ProcessInfo.processInfo.systemUptime
+            let cpuBegan = processCPUSeconds()
             let result = try await session.replayRealtimeForQualification(samples)
+            report.replayCPUSeconds = processCPUSeconds() - cpuBegan
+            report.speechComputeSeconds = session.lastQualificationReplay?.computeSeconds
+            report.speechReplayWallSeconds = session.lastQualificationReplay?.wallSeconds
             report.finalText = result.text; report.finalTranslation = result.translation
+            report.utterances = result.transcript.utterances
             report.capturedSeconds = result.duration; report.status = report.failures.isEmpty ? "completed" : "completed-with-failures"
         } catch {
             report.status = "failed"
@@ -145,6 +174,8 @@ func readWAV(_ data: Data) throws -> [Float] {
             try write(); await session.unload(); throw error
         }
         report.wallSeconds = ProcessInfo.processInfo.systemUptime - began
+        var usage = rusage()
+        if getrusage(RUSAGE_SELF, &usage) == 0 { report.processPeakRSSBytes = usage.ru_maxrss }
         try write(); await session.unload()
         print(output.path)
     }

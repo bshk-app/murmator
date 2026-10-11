@@ -85,8 +85,8 @@ struct MenuPopover: View {
     private var head: some View {
         VStack(spacing: 9) {
             HStack(spacing: 10) {
-                DictatorMascot(mood: dictation.mascotMood, size: 30)
-                Text("MurMur").font(.system(size: 15, weight: .semibold)).foregroundStyle(primary)
+                MurmatorMascot(mood: dictation.mascotMood, size: 30)
+                Text("Murmator").font(.system(size: 15, weight: .semibold)).foregroundStyle(primary)
                 Spacer()
                 Toggle("", isOn: $enabled).toggleStyle(.switch).tint(Mur.accent).labelsHidden()
             }
@@ -132,14 +132,25 @@ struct MenuPopover: View {
 
     /// Stop is always offered; Start follows the master switch, like the hotkey.
     private var startStopDisabled: Bool {
-        guard !isRecording else { return false }
-        return !enabled || dictation.isActive || dictation.state == .loadingModels
+        if dictation.state == .unloadingModels { return true }
+        if isRecording || dictation.isManagingModels || dictation.isStartingRecording { return false }
+        return !enabled || dictation.isActive
+    }
+
+    private var startStopTitle: String {
+        if dictation.state == .unloadingModels { return String(localized: "Freeing memory…") }
+        if dictation.isStartingRecording { return String(localized: "Cancel start") }
+        if dictation.isManagingModels { return String(localized: "Cancel loading") }
+        if dictation.state == .modelsUnloaded || (!dictation.isActive && dictation.loadedModelName == nil) {
+            return String(localized: "Load models")
+        }
+        let what = appModeRaw == AppMode.captions.rawValue ? "captions" : "dictation"
+        return isRecording ? "Stop \(what)" : "Start \(what)"
     }
 
     private var startStopButton: some View {
-        let what = appModeRaw == AppMode.captions.rawValue ? "captions" : "dictation"
         return Button { dictation.toggleFromMenu() } label: {
-            Text(isRecording ? "Stop \(what)" : "Start \(what)")
+            Text(startStopTitle)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(isRecording ? primary : .white)
                 .frame(maxWidth: .infinity).padding(.vertical, 6)
@@ -158,7 +169,7 @@ struct MenuPopover: View {
         HStack(spacing: 11) {
             Text("Microphone").font(.system(size: 12)).foregroundStyle(secondary)
                 .frame(width: 74, alignment: .leading)
-            MeterBars(active: dictation.isActive)
+            MeterBars(active: isRecording)
         }
         .padding(.horizontal, 16).padding(.vertical, 11)
     }
@@ -280,6 +291,39 @@ struct MenuPopover: View {
         return "~\(Self.megabytes(bytes)) MB"
     }
 
+    @ViewBuilder
+    private var modelMemoryControls: some View {
+        if dictation.isManagingModels {
+            ProgressView(value: dictation.modelPreparation?.fraction)
+                .progressViewStyle(.linear)
+                .tint(Mur.accent)
+                .accessibilityLabel(dictation.modelPreparationStatus)
+                .padding(.top, 8)
+        } else if let name = dictation.loadedModelName {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("In memory: \(name)")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Button("Unload") { dictation.releaseModels() }
+                    .font(.system(size: 11.5))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Mur.accent)
+                    .disabled(!dictation.canChangeModels)
+                    .help("Unloads models from memory. Downloaded files stay on this Mac.")
+            }
+            .padding(.top, 7)
+        } else if case .error = dictation.state {
+            Button("Unload") { dictation.releaseModels() }
+                .font(.system(size: 11.5))
+                .buttonStyle(.plain)
+                .foregroundStyle(Mur.accent)
+                .help("Unloads models from memory. Downloaded files stay on this Mac.")
+                .padding(.top, 7)
+        }
+    }
+
     private var settings: some View {
         VStack(alignment: .leading, spacing: 0) {
             label("Microphone")
@@ -292,14 +336,14 @@ struct MenuPopover: View {
             .labelsHidden()
             .pickerStyle(.menu)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .disabled(dictation.isActive)
+            .disabled(!dictation.canChangeModels)
             label("Mode").padding(.top, 11)
             MurSegment(label: "Mode", selection: $appModeRaw,
                        options: [(AppMode.dictation.rawValue, "Dictation"),
                                  (AppMode.captions.rawValue, "Captions")])
                 // Switching pipelines under a live session is not a state worth
                 // supporting — the running one owns the mic until it stops.
-                .disabled(dictation.isActive)
+                .disabled(!dictation.canChangeModels)
             if appModeRaw == AppMode.captions.rawValue {
                 Text("Start above or tap the shortcut; the same again stops. Nothing is typed into other apps.")
                     .font(.system(size: 11.5))
@@ -318,6 +362,8 @@ struct MenuPopover: View {
             }
             label("Model").padding(.top, 11)
             MurSegment(label: "Model", selection: $modelRaw, options: modelOptions)
+                .disabled(!dictation.canChangeModels)
+            modelMemoryControls
             if !DictationMode.allowsLiveDraft(language: languageRaw) {
                 Text("The live draft is unreliable in this language, so only the accurate pass runs.")
                     .font(.system(size: 11.5))
@@ -346,7 +392,7 @@ struct MenuPopover: View {
                     // not do. `DictationController.dictationSource` makes the
                     // stale choice harmless; this makes it un-offerable, and
                     // matches Translate to, which is disabled here too.
-                    .disabled(dictation.isActive)
+                    .disabled(!dictation.canChangeModels)
                 }
                 Text("\u{2192}")
                     .font(.system(size: 12))
@@ -461,7 +507,7 @@ struct MenuPopover: View {
             // Re-run the first-run tour: reset to Welcome, then ask the App scene
             // (via the router) to open the onboarding window.
             footerRow("Setup tour…", "") { onSetupTour() }
-            footerRow("Quit MurMur", "⌘ Q") { NSApplication.shared.terminate(nil) }
+            footerRow("Quit Murmator", "⌘ Q") { NSApplication.shared.terminate(nil) }
         }
         .padding(.horizontal, 6).padding(.vertical, 5)
     }

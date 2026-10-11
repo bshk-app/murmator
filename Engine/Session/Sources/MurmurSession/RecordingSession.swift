@@ -38,7 +38,7 @@ import MurmurTranslation
     }
     public enum State: Equatable { case idle, preparing, ready, recording, finishing }
     public struct Preparation {
-        public enum Stage { case speech, translation, warmup }
+        public enum Stage { case unloading, speech, translation, warmup }
         public let stage: Stage
         public let fraction: Double?
         public init(stage: Stage, fraction: Double?) { self.stage = stage; self.fraction = fraction }
@@ -68,6 +68,9 @@ import MurmurTranslation
     public private(set) var state = State.idle
     public private(set) var transcript = RecordingTranscript()
     public private(set) var capturedSeconds = 0.0
+    /// Diagnostics for the last file replay; normal microphone sessions do not
+    /// depend on these measurements. Compute includes the speech adapter/VAD.
+    public private(set) var lastQualificationReplay: SpeechReplayResult?
     public var isPrepared: Bool { configuration != nil && speech != nil && state != .preparing && cleanup == nil }
     public var residentTranslationModelCount: Int { get async { await translator.residentModelCount } }
 
@@ -87,7 +90,12 @@ import MurmurTranslation
     private var cleanup: Task<Void, Never>?
 
     public convenience init(modelsRoot: URL, translationRoot: URL, memoryLimit: Int) {
-        self.init(makeSpeech: { SessionSpeechDriver(profile: $0, modelsRoot: modelsRoot, memoryLimit: memoryLimit) },
+        self.init(makeSpeech: { profile in
+                      #if os(macOS)
+                      if profile.previewBackend == .whistle { return WhistleSessionSpeechDriver() }
+                      #endif
+                      return SessionSpeechDriver(profile: profile, modelsRoot: modelsRoot, memoryLimit: memoryLimit)
+                  },
                   translator: SessionTranslationDriver(modelsRoot: translationRoot))
     }
     init(makeSpeech: @escaping (SpeechRecognitionProfile) -> any SessionSpeechDriving, translator: any SessionTranslationDriving) {
@@ -121,11 +129,15 @@ import MurmurTranslation
         do {
             try await perform(token) { [self] in
                 if speechKey != config.profile.configurationID || speech == nil {
-                    if let speech { await speech.close() }
+                    if let speech {
+                        onEvent?(.preparation(.init(stage: .unloading, fraction: nil)))
+                        await speech.close()
+                    }
                     try check(token)
                     speech = nil; speechKey = nil
                     let driver = makeSpeech(config.profile)
                     speech = driver
+                    onEvent?(.preparation(.init(stage: .speech, fraction: nil)))
                     try await driver.prepare { [weak self] value in
                         guard let self, self.generation == token else { return }
                         self.onEvent?(.preparation(value))
@@ -150,6 +162,7 @@ import MurmurTranslation
                 if let speech, speechKey == nil {
                     // Keep cleanup owned: a replacement cannot start while the
                     // failed driver's model release is still suspended.
+                    onEvent?(.preparation(.init(stage: .unloading, fraction: nil)))
                     try? await perform(token) { await speech.close() }
                     guard generation == token else { throw error }
                     self.speech = nil
@@ -216,6 +229,7 @@ import MurmurTranslation
     public func replayRealtimeForQualification(_ samples: [Float]) async throws -> Result {
         try available()
         guard state == .ready, configuration != nil, let speech else { throw LifecycleError.notPrepared }
+        lastQualificationReplay = nil
         generation = UUID(); translationGeneration = UUID()
         let token = generation
         transcript = RecordingTranscript(); sourceFinished = false; captureFailurePending = false; capturedSeconds = 0
@@ -229,6 +243,7 @@ import MurmurTranslation
                 try check(token)
                 let replay = try await speech.replay(samples)
                 try check(token)
+                lastQualificationReplay = replay
                 let finalSnapshot = await speech.snapshot()
                 try check(token)
                 accept(finalSnapshot, token: token)
@@ -371,8 +386,8 @@ import MurmurTranslation
         let token = generation
         translationGeneration = UUID()
         changeState(.finishing)
-        try await perform(token) { [self] in
-            let text = await speech.stop()
+        do { try await perform(token) { [self] in
+            let text = try await speech.stop()
             try check(token)
             let finalSnapshot = await speech.snapshot()
             try check(token)
@@ -380,6 +395,15 @@ import MurmurTranslation
             capturedSeconds = speech.capturedSeconds
             transcript.finish(fallback: text, endSample: Int(capturedSeconds * 16_000))
             sourceFinished = true
+        } } catch {
+            if generation == token {
+                // Never promote a preview or return a deliverable result when
+                // a recognizer failed its final. Release it so Retry can prepare.
+                accept(.init(revision: snapshot.revision &+ 1, confirmed: snapshot.confirmed,
+                             provisional: "", settledThroughSample: snapshot.settledThroughSample), token: token)
+                await unload()
+            }
+            throw error
         }
         return result
     }
@@ -422,6 +446,8 @@ import MurmurTranslation
         if let cleanup { await cleanup.value; return }
         generation = UUID(); translationGeneration = UUID()
         configuration = nil; speechKey = nil
+        changeState(.preparing)
+        onEvent?(.preparation(.init(stage: .unloading, fraction: nil)))
         let pending = inFlight
         pending?.cancel()
         let driver = speech

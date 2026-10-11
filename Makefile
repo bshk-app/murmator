@@ -43,9 +43,9 @@ test-app: gen
 		-configuration Debug -destination 'platform=macOS,arch=arm64' \
 		-allowProvisioningUpdates ONLY_ACTIVE_ARCH=YES SWIFT_ENABLE_EXPLICIT_MODULES=NO
 run: build
-	-killall Murmur 2>/dev/null          # quit a stale background agent so `open` launches the fresh build
+	-killall Murmur Murmator 2>/dev/null   # quit a stale background agent, including the old product name
 	@sleep 1                             # let it fully die — else `open` races LaunchServices (-600)
-	open "$$(find $(HOME)/Library/Developer/Xcode/DerivedData/Murmur-*/Build/Products/Release -maxdepth 1 -name Murmur.app | head -1)"
+	open "$$(find $(HOME)/Library/Developer/Xcode/DerivedData/Murmur-*/Build/Products/Release -maxdepth 1 -name Murmator.app | head -1)"
 
 # murmur-cli — same MurmurKit core as the app, RELEASE. `swift build` is flaky at
 # emitting mlx-swift's Cmlx metallib bundle in a fresh checkout, so copy a

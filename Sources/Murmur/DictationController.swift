@@ -12,6 +12,9 @@ import PostHog
 final class DictationController {
     enum State: Equatable {
         case loadingModels
+        case unloadingModels
+        case modelsUnloaded
+        case startingRecording
         case idle
         case recording
         case transcribing
@@ -19,7 +22,7 @@ final class DictationController {
         case error(String)
     }
 
-    private(set) var state: State = .loadingModels {
+    private(set) var state: State = .modelsUnloaded {
         // Every transition, wherever it happens, tells the key tap what to
         // hold back. One hook rather than a call after each assignment: a
         // missed call would leave Return captured after a dictation ended,
@@ -27,6 +30,7 @@ final class DictationController {
         didSet { syncKeyCapture() }
     }
     private(set) var sessionWarning: String?
+    private(set) var modelPreparation: RecordingSession.Preparation?
 
     /// Pinned since the Insert-mode setting was removed. Kept in the events rather
     /// than dropped so historical PostHog series stay continuous.
@@ -91,6 +95,7 @@ final class DictationController {
         guard confirmsWithReturn else { return .off }
         switch state {
         case .recording: return .recording
+        case .startingRecording: return stopAfterStart ? .finishing : .recording
         case .transcribing: return discarding ? .off : .finishing
         case .transcribed where pasteSettling: return .finishing
         default: return .off
@@ -156,6 +161,7 @@ final class DictationController {
             .appendingPathComponent("Murmur", isDirectory: true)
         self.session = session ?? RecordingSession(modelsRoot: root,
             translationRoot: TranslationModels.root, memoryLimit: Int(Double(ProcessInfo.processInfo.physicalMemory) * 0.6))
+        if self.session.isPrepared { state = .idle }
         connectSession()
     }
 
@@ -174,6 +180,10 @@ final class DictationController {
             guard captionsRunning, state == .recording else { return }
             captionsOverlay.showTranslation(line)
         case let .preparation(progress):
+            if state == .loadingModels || state == .unloadingModels {
+                modelPreparation = progress
+                state = progress.stage == .unloading ? .unloadingModels : .loadingModels
+            }
             if progress.stage == .translation, let fraction = progress.fraction {
                 translationDownload = .init(fraction: fraction, receivedBytes: 0, totalBytes: 0)
             }
@@ -194,6 +204,18 @@ final class DictationController {
 
                 FileHandle.standardError.write(Data("Diagnostic audio failed: \(message)\n".utf8))
             }
+        case .state(.preparing):
+            if !isActive, !isPreparing, !starting { state = .loadingModels }
+        case .state(.ready):
+            if !isPreparing, !starting, isManagingModels {
+                modelPreparation = nil
+                state = .idle
+            }
+        case .state(.idle):
+            if !isPreparing, !starting, isManagingModels, modelPreparation?.stage == .unloading {
+                modelPreparation = nil
+                state = .modelsUnloaded
+            }
         default: break
         }
     }
@@ -201,6 +223,7 @@ final class DictationController {
     @ObservationIgnored private var promptedAccessibility = false
     @ObservationIgnored private var isPreparing = false
     @ObservationIgnored private var preparationTask: Task<Void, Never>?
+    @ObservationIgnored private var preparationGeneration = 0
 
     /// Which pipeline owns the live session, and whether its stop comes from a
     /// second tap rather than the key release. Both latched at start so a mode
@@ -261,7 +284,10 @@ final class DictationController {
     var statusLine: String {
         if let sessionWarning { return sessionWarning }
         switch state {
-        case .loadingModels: return "Loading models…"
+        case .loadingModels: return modelPreparationStatus
+        case .unloadingModels: return String(localized: "Freeing model memory…")
+        case .modelsUnloaded: return String(localized: "Models are not loaded")
+        case .startingRecording: return String(localized: "Starting microphone…")
         case .idle:
             return rightCommandWorks
                 ? "Idle — tap \(RightCommandTrigger.label) or hold \(shortcutLabel)"
@@ -277,8 +303,12 @@ final class DictationController {
     var shortStatus: String {
         if let sessionWarning { return sessionWarning }
         switch state {
-        case .loadingModels: return "Loading…"
-        case .idle, .transcribed: return "Ready"
+        case .loadingModels: return modelPreparationStatus
+        case .unloadingModels: return String(localized: "Freeing memory…")
+        case .modelsUnloaded: return String(localized: "Models are not loaded")
+        case .startingRecording: return String(localized: "Starting microphone…")
+        case .idle, .transcribed:
+            return session.isPrepared ? "Ready" : String(localized: "Models are not loaded")
         case .recording: return "Listening"
         case .transcribing: return "Transcribing"
         case let .error(m): return m
@@ -287,17 +317,39 @@ final class DictationController {
 
     /// True while a dictation is in flight (drives the popover pulse dot).
     var isActive: Bool {
-        state == .recording || state == .transcribing
+        state == .recording || state == .transcribing || state == .startingRecording
     }
 
-    var mascotMood: DictatorMascotMood {
+    var isManagingModels: Bool { state == .loadingModels || state == .unloadingModels }
+    var isStartingRecording: Bool { starting }
+    var canChangeModels: Bool { !isActive && !starting }
+    var loadedModelName: String? {
+        guard session.isPrepared, let profile = session.configuration?.profile else { return nil }
+        let preview = profile.previewBackend == .whistle ? "Whistle" : "Nemotron"
+        switch profile.mode {
+        case .fast: return preview
+        case .accurate: return profile.model.title
+        case .hybrid: return "\(preview) + \(profile.model.title)"
+        }
+    }
+    var modelPreparationStatus: String {
+        switch modelPreparation?.stage {
+        case .unloading: return String(localized: "Freeing model memory…")
+        case .translation: return String(localized: "Preparing translation…")
+        case .warmup: return String(localized: "Warming up recognition…")
+        case .speech: return String(localized: "Loading speech model…")
+        case nil: return String(localized: "Preparing models…")
+        }
+    }
+
+    var mascotMood: MascotMood {
         switch state {
         case .recording: return .listening
         case .transcribing: return .transcribing
         case .error: return .error
-        case .loadingModels: return .transcribing
+        case .loadingModels, .unloadingModels, .startingRecording: return .transcribing
         case .transcribed: return .success
-        case .idle: return .idle
+        case .idle, .modelsUnloaded: return .idle
         }
     }
 
@@ -373,7 +425,7 @@ final class DictationController {
     /// Never while a session is live: preparation moves `state` to `.loadingModels`,
     /// which would strand the running mic (stop only fires from `.recording`).
     func prepareCurrentMode() {
-        guard !isActive else { return }
+        guard canChangeModels else { return }
         prepare(mode: ModelSetting.current)
     }
 
@@ -396,12 +448,16 @@ final class DictationController {
         translationPrepare = Task { [weak self] in
             await previousPreparation?.value
             await pendingSpeech?.value
-            guard let self, !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled, translationGeneration == generation else { return }
             do {
-                let profile = try SpeechRecognitionProfile.resolve(language: source, mode: ModelSetting.current)
+                let profile = try WhistleSetting.profile(language: source, mode: ModelSetting.current)
                 try await session.prepare(.init(profile: profile, target: target))
             } catch is CancellationError {
             } catch {
+                if translationGeneration == generation, !Task.isCancelled, !isActive {
+                    modelPreparation = nil
+                    state = .error("Translation preparation failed: \(error.localizedDescription)")
+                }
                 FileHandle.standardError.write(Data("Translation preparation failed: \(error.localizedDescription)\n".utf8))
             }
             if translationGeneration == generation { translationDownload = nil }
@@ -561,21 +617,70 @@ final class DictationController {
     }
 
     /// Lazily load (download on first run) only the models `mode` needs, surfacing
-    /// a loading state. A no-op when already ready or a load is in flight.
+    /// a loading state. New selections supersede old loads and wait for release.
     private func prepare(mode: DictationMode) {
-        guard !isPreparing else { return }
+        let previous = preparationTask
+        previous?.cancel()
+        preparationGeneration &+= 1
+        let generation = preparationGeneration
+        let language = SpeechLanguage.current
         isPreparing = true
-        state = .loadingModels
+        sessionWarning = nil
+        modelPreparation = nil
+        state = previous == nil ? .loadingModels : .unloadingModels
         let pendingTranslation = translationPrepare
         pendingTranslation?.cancel()
         preparationTask = Task { @MainActor in
+            if previous != nil || pendingTranslation != nil { await session.cancel() }
+            await previous?.value
             await pendingTranslation?.value
-            defer { isPreparing = false }
+            guard preparationGeneration == generation, !Task.isCancelled else { return }
+            defer {
+                if preparationGeneration == generation {
+                    isPreparing = false
+                    preparationTask = nil
+                    modelPreparation = nil
+                }
+            }
             do {
-                let profile = try SpeechRecognitionProfile.resolve(language: SpeechLanguage.current, mode: mode)
+                let profile = try WhistleSetting.profile(language: language, mode: mode)
+                state = .loadingModels
                 try await session.prepare(.init(profile: profile))
-                if case .loadingModels = state { state = .idle }
-            } catch { state = .error("model load: \(error.localizedDescription)") }
+                guard preparationGeneration == generation, !Task.isCancelled else { return }
+                state = .idle
+            } catch {
+                guard preparationGeneration == generation, !Task.isCancelled else { return }
+                state = .error("model load: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Cancels preparation and waits for native/MLX work to drain before Ready
+    /// can be shown or another model can acquire memory. Cached files remain.
+    func releaseModels() {
+        guard state != .recording, state != .transcribing else { return }
+        let previous = preparationTask, pendingTranslation = translationPrepare
+        let pendingStart = starting ? recordingTask : nil
+        previous?.cancel(); pendingTranslation?.cancel(); pendingStart?.cancel()
+        preparationGeneration &+= 1
+        let generation = preparationGeneration
+        if starting { recordingGeneration &+= 1 }
+        starting = false; stopAfterStart = false
+        isPreparing = true
+        sessionWarning = nil
+        modelPreparation = .init(stage: .unloading, fraction: nil)
+        state = .unloadingModels
+        preparationTask = Task { @MainActor in
+            await session.unload()
+            await previous?.value
+            await pendingTranslation?.value
+            await pendingStart?.value
+            guard preparationGeneration == generation, !Task.isCancelled else { return }
+            translationPrepare = nil
+            modelPreparation = nil
+            preparationTask = nil
+            isPreparing = false
+            state = .modelsUnloaded
         }
     }
 
@@ -598,7 +703,7 @@ final class DictationController {
 
     private var recordingTriggerState: RecordingTriggerState {
         RecordingTriggerState(
-            isRecording: state == .recording,
+            isRecording: state == .recording || starting,
             isActive: isActive,
             latchedToggle: latchedToggle,
             isEnabled: DictationEnabled.value
@@ -645,7 +750,7 @@ final class DictationController {
             // Only if it really started: with the models still cold it asks for
             // them instead, and the tap that ends this press may then start one.
             // A start that fails later still counts - this press made it.
-            heldPressStarted = state == .recording
+            heldPressStarted = state == .recording || starting
         case .rightCommandReleased:
             guard RightCommandTrigger.isEnabled else { return }
             if heldPressStarted {
@@ -666,7 +771,7 @@ final class DictationController {
         case .confirm:
             // Return before letting go of a held right ⌘ ends that press too.
             heldPressStarted = false
-            guard confirmsWithReturn, state == .recording else { return }
+            guard confirmsWithReturn, state == .recording || starting else { return }
             endRecording()
         case .cancel:
             heldPressStarted = false
@@ -676,7 +781,7 @@ final class DictationController {
             // `.recording` with a stop pending is the first Return landing
             // while the microphone was still opening: still finishing, as far
             // as the user can tell.
-            let finishing = state == .transcribing || (state == .recording && stopAfterStart)
+            let finishing = state == .transcribing || (starting && stopAfterStart)
             guard confirmsWithReturn, finishing, !discarding else { return }
             submitRequested = true
             hud.willSubmit()
@@ -686,7 +791,9 @@ final class DictationController {
     /// The popover's Start/Stop, for anyone without the shortcut to hand.
     /// Always tap-on / tap-off: a click leaves no key to release.
     func toggleFromMenu() {
-        if state == .recording {
+        if (isManagingModels && state != .unloadingModels) || starting {
+            releaseModels()
+        } else if state == .recording {
             endRecording()
         } else {
             beginRecording(submit: false, forceToggle: true, source: .menu)
@@ -712,7 +819,7 @@ final class DictationController {
     /// Not `private`: tests drive this with a substituted session to prove
     /// what it latches.
     func beginRecording(submit: Bool, forceToggle: Bool = false, source: TriggerSource = .shortcut) {
-        guard !isActive, !isPreparing else { return }
+        guard !isActive, !isPreparing, !starting else { return }
         let language = SpeechLanguage.current
         let modelMode = ModelSetting.current.effective(for: language)
         guard session.isPrepared || translationPrepare != nil else { prepare(mode: modelMode); return }
@@ -733,14 +840,18 @@ final class DictationController {
         // previous paste still has to send it.
         if pasteSettling { closePasteSettle(pasteHasLanded: false) }
         recordingGeneration &+= 1
-        state = .recording
+        modelPreparation = nil
+        state = .loadingModels
         connectSession()
         let pendingTranslation = translationPrepare
+        let generation = recordingGeneration
         recordingTask = Task {
-            defer { starting = false }
+            defer { if recordingGeneration == generation { starting = false } }
             do {
                 await pendingTranslation?.value
-                let profile = try SpeechRecognitionProfile.resolve(language: language, mode: modelMode)
+                try Task.checkCancellation()
+                guard recordingGeneration == generation else { throw CancellationError() }
+                let profile = try WhistleSetting.profile(language: language, mode: modelMode)
                 // Translate captions continuously; dictation chooses its output target at Stop.
                 let target = captions && TranslationSetting.canTranslate(from: language) ? TranslationSetting.target : nil
                 do {
@@ -750,8 +861,15 @@ final class DictationController {
                     // A translation model failure must not prevent live original captions.
                     try await session.prepare(.init(profile: profile))
                 }
+                try Task.checkCancellation()
+                guard recordingGeneration == generation else { throw CancellationError() }
+                modelPreparation = nil
+                state = .startingRecording
                 try await session.start(microphoneUID: MicrophoneSetting.currentUID,
                                         recordingURL: captions ? nil : diagnosticRecordingURL())
+                try Task.checkCancellation()
+                guard recordingGeneration == generation else { throw CancellationError() }
+                state = .recording
                 captionsRunning = captions
                 dictationSource = language
                 dictationMode = modelMode
@@ -780,6 +898,8 @@ final class DictationController {
                 starting = false
                 if stopAfterStart { endRecording() }
             } catch {
+                guard recordingGeneration == generation, !Task.isCancelled else { return }
+                modelPreparation = nil
                 state = .error(error.localizedDescription)
                 hud.error(error.localizedDescription)
                 PostHogSDK.shared.capture("dictation_failed", properties: ["error": error.localizedDescription])
@@ -818,15 +938,19 @@ final class DictationController {
     /// microphone and the session's lifecycle close the same way, and only
     /// the delivery is skipped.
     func cancelRecording(reason: CancelReason = .escape) {
-        guard state == .recording else { return }
+        guard state == .recording || starting else { return }
         discarding = true
         cancelReason = reason
         endRecording()
     }
 
     func endRecording() {
+        if starting {
+            if state == .loadingModels || state == .unloadingModels { releaseModels() }
+            else { stopAfterStart = true; syncKeyCapture() }
+            return
+        }
         guard state == .recording else { return }
-        if starting { stopAfterStart = true; return }
         let discard = discarding
         let cancelReasonAtStop = cancelReason
         state = .transcribing

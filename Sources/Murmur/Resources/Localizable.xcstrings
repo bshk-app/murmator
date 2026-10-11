@@ -111,12 +111,12 @@
         }
       }
     },
-    "Hi, I’m MurMur! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?": {
+    "Hi, I’m Murmator! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Привет, я MurMur! Зажми клавишу, говори — и я печатаю слова прямо там, где курсор. Готовы меня настроить?"
+            "value": "Привет, я Мурматор! Зажми клавишу, говори — и я печатаю слова прямо там, где курсор. Готовы меня настроить?"
           }
         }
       }
@@ -281,12 +281,12 @@
         }
       }
     },
-    "Start using MurMur": {
+    "Start using Murmator": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Начать пользоваться MurMur"
+            "value": "Начать пользоваться Мурматор"
           }
         }
       }
@@ -321,12 +321,12 @@
         }
       }
     },
-    "MurMur is live": {
+    "Murmator is live": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "MurMur на связи"
+            "value": "Мурматор на связи"
           }
         }
       }
@@ -481,12 +481,12 @@
         }
       }
     },
-    "MurMur is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.": {
+    "Murmator is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Теперь MurMur тихо живёт в строке меню. Зажмите сочетание в любом приложении и просто говорите — слова появятся прямо там, где курсор."
+            "value": "Теперь Мурматор тихо живёт в строке меню. Зажмите сочетание в любом приложении и просто говорите — слова появятся прямо там, где курсор."
           }
         }
       }
@@ -887,6 +887,356 @@
           "stringUnit": {
             "state": "translated",
             "value": "текст появляется"
+          }
+        }
+      }
+    },
+    "Mascot": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Маскот"
+          }
+        }
+      }
+    },
+    "Choose a companion. You can change it anytime.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите спутника. Стиль можно сменить в любой момент."
+          }
+        }
+      }
+    },
+    "Friendly cat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дружелюбный кот"
+          }
+        }
+      }
+    },
+    "Astronaut": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Космонавт"
+          }
+        }
+      }
+    },
+    "Wizard": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Волшебник"
+          }
+        }
+      }
+    },
+    "Gardener": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Садовник"
+          }
+        }
+      }
+    },
+    "Rock star": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рок-звезда"
+          }
+        }
+      }
+    },
+    "Pirate": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пират"
+          }
+        }
+      }
+    },
+    "Robot": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Робот"
+          }
+        }
+      }
+    },
+    "Sleepy cat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сонный кот"
+          }
+        }
+      }
+    },
+    "Classic": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Классический"
+          }
+        }
+      }
+    },
+    "The original mascot, with its cap and moustache.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прежний маскот с фуражкой и усами."
+          }
+        }
+      }
+    },
+    "Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мурматор"
+          }
+        }
+      }
+    },
+    "Quit Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти из Мурматора"
+          }
+        }
+      }
+    },
+    "Murmator Setup": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка Мурматора"
+          }
+        }
+      }
+    },
+    "English Fast model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель для английского Fast"
+          }
+        }
+      }
+    },
+    "Experimental speech recognition": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспериментальное распознавание речи"
+          }
+        }
+      }
+    },
+    "Whistle runs on this Mac and downloads a 17 MB model on first use. Choose English and Fast in the menu to use it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whistle работает на этом Mac и загружает модель размером 17 МБ при первом использовании. Чтобы использовать её, выберите в меню английский язык и режим Fast."
+          }
+        }
+      }
+    },
+    "Moustache": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Усы"
+          }
+        }
+      }
+    },
+    "With a moustache": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С усами"
+          }
+        }
+      }
+    },
+    "Without a moustache": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без усов"
+          }
+        }
+      }
+    },
+    "Classic costume without a moustache.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Классический образ без усов."
+          }
+        }
+      }
+    },
+    "Freeing model memory…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Освобождение памяти моделей…"
+          }
+        }
+      }
+    },
+    "Freeing memory…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Освобождение памяти…"
+          }
+        }
+      }
+    },
+    "Models are not loaded": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели не загружены"
+          }
+        }
+      }
+    },
+    "Starting microphone…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запуск микрофона…"
+          }
+        }
+      }
+    },
+    "Loading speech model…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка модели речи…"
+          }
+        }
+      }
+    },
+    "Preparing models…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка моделей…"
+          }
+        }
+      }
+    },
+    "Warming up recognition…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка распознавания…"
+          }
+        }
+      }
+    },
+    "Cancel start": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить запуск"
+          }
+        }
+      }
+    },
+    "Cancel loading": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить загрузку"
+          }
+        }
+      }
+    },
+    "Load models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузить модели"
+          }
+        }
+      }
+    },
+    "In memory: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В памяти: %@"
+          }
+        }
+      }
+    },
+    "Unload": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выгрузить"
+          }
+        }
+      }
+    },
+    "Unloads models from memory. Downloaded files stay on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выгружает модели из памяти. Загруженные файлы остаются на этом Mac."
           }
         }
       }

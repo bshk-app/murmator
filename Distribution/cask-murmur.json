@@ -1,10 +1,10 @@
 {
   "token": "murmur",
-  "name": "Murmur",
+  "name": "Murmator",
   "desc": "On-device dictation and live captions",
   "homepage": "https://github.com/bshk-app/murmur",
   "autoUpdates": true,
-  "appBundle": "Murmur.app",
+  "appBundle": "Murmator.app",
   "dependsOnMacOS": true,
   "livecheck": true,
   "livecheckUrl": "https://raw.githubusercontent.com/bshk-app/murmur/main/appcast.xml",

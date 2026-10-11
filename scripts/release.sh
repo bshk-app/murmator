@@ -13,7 +13,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 readonly PUBLISH_MODE="${PUBLISH-1}"
 readonly OUT_DIR="${ROOT}/out"
-readonly APP_PATH="${ROOT}/build/Murmur.app"
+readonly APP_PATH="${ROOT}/build/Murmator.app"
 readonly PLIST_BUDDY=/usr/libexec/PlistBuddy
 
 require_publish_mode "$PUBLISH_MODE"
@@ -94,7 +94,7 @@ note "== GitHub release preflight =="
 env PUBLISH="$PUBLISH_MODE" RELEASE_CHANNEL="$CHANNEL" \
     "$ROOT/scripts/publish-github-release.sh" --preflight "$SHORT_VERSION"
 
-note "== staging unsigned Murmur.app =="
+note "== staging unsigned Murmator.app =="
 APP_VERSION="$SHORT_VERSION" BUILD_NUMBER="$BUILD_NUMBER" \
     "$ROOT/scripts/stage-murmur-app.sh" "$APP_PATH"
 [[ -d "$APP_PATH" ]] || die "staging produced no bundle at $APP_PATH"
@@ -106,7 +106,7 @@ staged_sparkle_key="$($PLIST_BUDDY -c 'Print SUPublicEDKey' "$plist")"
 [[ "$staged_short" == "$SHORT_VERSION" ]] || die "staged version mismatch"
 [[ "$staged_build" == "$BUILD_NUMBER" ]] || die "staged build mismatch"
 [[ "$staged_sparkle_key" == "$SPARKLE_PUBLIC_ED_KEY" ]] \
-    || die "SPARKLE_PUBLIC_ED_KEY does not match the key baked into Murmur.app"
+    || die "SPARKLE_PUBLIC_ED_KEY does not match the key baked into Murmator.app"
 
 cat >&2 <<INFO
 
@@ -126,9 +126,9 @@ zamokctl package \
     "${notary_args[@]}" \
     --format dmg
 
-dmg_path="$(find "$OUT_DIR" -maxdepth 3 -type f -name "Murmur-${staged_short}.dmg" -print -quit)"
+dmg_path="$(find "$OUT_DIR" -maxdepth 3 -type f -name "Murmator-${staged_short}.dmg" -print -quit)"
 [[ -n "$dmg_path" && -f "$dmg_path" ]] \
-    || die "zamokctl package produced no Murmur-${staged_short}.dmg under $OUT_DIR"
+    || die "zamokctl package produced no Murmator-${staged_short}.dmg under $OUT_DIR"
 package_manifest="$(find "$(dirname "$dmg_path")" -maxdepth 1 -type f -name manifest.json -print -quit)"
 [[ -n "$package_manifest" && -f "$package_manifest" ]] \
     || die "zamokctl package produced no manifest.json beside the DMG"
@@ -156,5 +156,5 @@ else
     note "note: PUBLISH=0 — draft only; appcast and cask unchanged"
 fi
 
-printf '\nReleased Murmur %s (%s) to the %s channel.\n' \
+printf '\nReleased Murmator %s (%s) to the %s channel.\n' \
     "$staged_short" "$staged_build" "$CHANNEL"

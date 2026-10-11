@@ -11,6 +11,7 @@ struct DownloadScreen: View {
     private var stage: LocalizedStringKey {
         guard let progress = model.preparationProgress else { return "Preparing speech models…" }
         switch progress.stage {
+        case .unloading: return "Freeing model memory…"
         case .speech: return "Preparing speech models…"
         case .translation: return "Preparing translation…"
         case .warmup: return "Warming up recognition…"

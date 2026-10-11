@@ -11,6 +11,27 @@ release-please drafts each section from conventional commits and opens a release
 PR. Rewrite those generated lines in the PR into concise prose a person should
 read in an update panel before merging it.
 
+## [0.6.0](https://github.com/bshk-app/murmur/compare/murmur-v0.5.0...murmur-v0.6.0) (2026-10-11)
+
+### Added
+
+- The Mac app is now called Murmator, with a refreshed icon and mascot choices.
+  Existing settings and permissions carry over.
+- See which model is in memory, follow loading progress, cancel preparation,
+  and unload models while keeping their downloaded files for next time.
+- Try Whistle, a small CPU recognition model, under Settings → Experimental
+  for English in Fast mode. Nemotron remains the default. Whistle is still
+  experimental and is not available for other languages or recognition modes.
+
+### Fixed
+
+- Model changes release the previous model before loading its replacement.
+  When you switch several times, the last choice wins.
+- The menu shows microphone startup separately and says Listening only after
+  recording starts. Cancelling preparation does not start the microphone.
+- Whistle can recover from repeated endings when finishing a phrase; a final
+  that still fails is reported as an error instead of inserting draft text.
+
 ## [0.5.0](https://github.com/bshk-app/murmur/compare/murmur-v0.4.0...murmur-v0.5.0) (2026-10-10)
 
 0.4.0 never went out as an update, so this release also brings what it added:

@@ -15,7 +15,7 @@ if [[ "${1:-}" == "--preflight" ]]; then
     readonly PACKAGE_MANIFEST=""
 else
     readonly SHORT_VERSION="${3:-$(read_version)}"
-    readonly ARTIFACT="${1:-$(find "$ROOT/out" -maxdepth 3 -type f -name "Murmur-${SHORT_VERSION}.dmg" -print -quit 2>/dev/null || true)}"
+    readonly ARTIFACT="${1:-$(find "$ROOT/out" -maxdepth 3 -type f -name "Murmator-${SHORT_VERSION}.dmg" -print -quit 2>/dev/null || true)}"
     readonly NOTES_FILE="${2:-${ROOT}/out/release-notes.md}"
     readonly MANIFEST="${4:-${ROOT}/out/github-release-manifest}"
     readonly PACKAGE_MANIFEST="${5:-$(find "$(dirname "${ARTIFACT:-$ROOT/out/x}")" -maxdepth 1 -type f -name manifest.json -print -quit 2>/dev/null || true)}"
@@ -42,11 +42,11 @@ gh api "repos/${REPOSITORY}/commits/${HEAD_SHA}" --silent >/dev/null \
 
 tag="$(release_tag "$SHORT_VERSION" "$CHANNEL")"
 if [[ "$CHANNEL" == "stable" ]]; then
-    title="Murmur ${SHORT_VERSION}"
+    title="Murmator ${SHORT_VERSION}"
     prerelease=false
     latest=true
 else
-    title="Murmur ${SHORT_VERSION} (${CHANNEL})"
+    title="Murmator ${SHORT_VERSION} (${CHANNEL})"
     prerelease=true
     latest=false
 fi

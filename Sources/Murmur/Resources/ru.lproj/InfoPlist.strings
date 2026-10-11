@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Мурматор";
+"CFBundleName" = "Мурматор";
+"NSMicrophoneUsageDescription" = "Мурматор распознаёт речь на этом Mac, пока вы удерживаете сочетание для диктовки.";

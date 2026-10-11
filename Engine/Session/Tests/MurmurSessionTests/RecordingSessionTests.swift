@@ -43,6 +43,27 @@ import MurmurTranslation
         XCTAssertEqual(speech.microphone, "selected-mic")
     }
 
+    func testFailedFinalRejectsPreviewAndAllowsFreshPreparation() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation()
+        let session = make(speech, translation)
+        try await session.prepare(configuration())
+        try await session.start(microphoneUID: nil)
+        speech.onSnapshot?(.init(revision: 1, confirmed: [], provisional: "unfinished preview"))
+        speech.failStop = true
+        do { _ = try await session.stopSource(); XCTFail("Failed final became a deliverable result") }
+        catch FakeFailure.recognition {}
+        XCTAssertEqual(session.transcript.provisional, "")
+        XCTAssertTrue(session.transcript.utterances.isEmpty)
+        XCTAssertEqual(translation.finishTargets, [])
+        XCTAssertEqual(speech.closeCount, 1)
+        XCTAssertEqual(session.state, .idle)
+        XCTAssertFalse(session.isPrepared)
+        speech.failStop = false
+        try await session.prepare(configuration(target: nil))
+        XCTAssertTrue(session.isPrepared)
+        await session.unload()
+    }
+
     func testCorrectedPhraseRejectsOldPreviewAndSegmentCallbacks() async throws {
         let speech = FakeSpeech(), translation = FakeTranslation()
         let session = make(speech, translation)
@@ -127,6 +148,58 @@ import MurmurTranslation
         gate.open()
         try await first.value
         await session.unload()
+    }
+
+    func testModelReplacementReportsReleaseBeforeLoadingNextModel() async throws {
+        let old = FakeSpeech(), next = FakeSpeech(), translation = FakeTranslation(), gate = Gate()
+        var constructions = 0
+        let session = RecordingSession(makeSpeech: { _ in
+            constructions += 1
+            return constructions == 1 ? old : next
+        }, translator: translation)
+        try await session.prepare(configuration(target: nil))
+        old.closeGate = gate
+        var stages: [String] = []
+        session.onEvent = { event in
+            if case .preparation(let progress) = event { stages.append(String(describing: progress.stage)) }
+        }
+        let config = RecordingSession.Configuration(profile: try .resolve(language: "en", mode: .fast))
+        let replacement = Task { try await session.prepare(config) }
+        await until { gate.waiting }
+        XCTAssertEqual(stages.last, "unloading")
+        XCTAssertEqual(constructions, 1)
+        XCTAssertEqual(next.prepareCount, 0)
+        XCTAssertFalse(session.isPrepared)
+        gate.open()
+        try await replacement.value
+        XCTAssertEqual(stages.last, "speech")
+        XCTAssertEqual(next.prepareCount, 1)
+        XCTAssertTrue(session.isPrepared)
+        await session.unload()
+    }
+
+    func testExplicitReleaseReportsBusyUntilModelMemoryIsFreed() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), gate = Gate()
+        let session = make(speech, translation)
+        let config = try configuration(target: nil)
+        try await session.prepare(config)
+        speech.closeGate = gate
+        var stage: String?
+        session.onEvent = { event in
+            if case .preparation(let value) = event { stage = String(describing: value.stage) }
+        }
+        let release = Task { await session.unload() }
+        await until { gate.waiting }
+        XCTAssertEqual(stage, "unloading")
+        XCTAssertEqual(session.state, .preparing)
+        XCTAssertFalse(session.isPrepared)
+        do { try await session.prepare(config); XCTFail("Loaded a new model before memory release finished") }
+        catch RecordingSession.LifecycleError.busy {}
+        gate.open()
+        await release.value
+        XCTAssertEqual(session.state, .idle)
+        XCTAssertNil(session.configuration)
+        XCTAssertEqual(translation.unloadCount, 1)
     }
 
     func testTargetChangeRejectsOldLanguageAndCanChangeAfterSourceFinishes() async throws {
@@ -361,7 +434,7 @@ import MurmurTranslation
     func open() { continuation?.resume(); continuation = nil }
 }
 
-private enum FakeFailure: Error { case translation, preparation }
+private enum FakeFailure: Error { case translation, preparation, recognition }
 
 @MainActor private final class FakeSpeech: SessionSpeechDriving {
     var onSnapshot: ((CaptionSnapshot) -> Void)?
@@ -376,6 +449,7 @@ private enum FakeFailure: Error { case translation, preparation }
     var prepareGate: Gate?, startGate: Gate?
     var closeGate: Gate?
     var failPrepare = false
+    var failStop = false
     var microphone: String?
     var finalText = ""
     var finalSnapshot = CaptionSnapshot(revision: 0, confirmed: [], provisional: "")
@@ -388,7 +462,10 @@ private enum FakeFailure: Error { case translation, preparation }
         startCount += 1; microphone = microphoneUID
         if let startGate { await startGate.wait() }
     }
-    func stop() async -> String { finalText }
+    func stop() async throws -> String {
+        if failStop { throw FakeFailure.recognition }
+        return finalText
+    }
     func snapshot() async -> CaptionSnapshot { finalSnapshot }
     func close() async { closeCount += 1; if let closeGate { await closeGate.wait() } }
 }

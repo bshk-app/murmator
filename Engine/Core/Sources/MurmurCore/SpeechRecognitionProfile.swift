@@ -18,6 +18,7 @@ public struct QualifiedSpeechOverride {
 }
 
 public struct SpeechRecognitionProfile {
+    public enum PreviewBackend: String { case nemotron, whistle }
     public enum Origin: String { case baseline, explicitChoice, qualifiedOverride, experimentalCandidate }
     public enum ProfileError: Error { case unsupportedLanguage, unavailableRuntime }
     public let language: String
@@ -25,11 +26,12 @@ public struct SpeechRecognitionProfile {
     public let model: SpeechModelChoice
     public let origin: Origin
     public let evidenceSHA256: String?
-    public var previewStage: String? { mode == .accurate ? nil : "nemotron-3.5-asr-streaming-0.6b-8bit" }
+    public let previewBackend: PreviewBackend
+    public var previewStage: String? { mode == .accurate ? nil : previewBackend == .whistle ? "whistle-swift-cpu" : "nemotron-3.5-asr-streaming-0.6b-8bit" }
     public var finalStage: String? { mode == .fast ? nil : model.rawValue }
     public var independentCorrector: Bool { mode == .hybrid && model.usesGPU }
     public var configurationID: String {
-        "\(mode.rawValue):\(model.rawValue):\(language):\(origin.rawValue):\(evidenceSHA256 ?? "baseline")"
+        "\(mode.rawValue):\(model.rawValue):\(language):\(origin.rawValue):\(evidenceSHA256 ?? "baseline"):\(previewBackend.rawValue)"
     }
     public var diagnostics: [String: String] {
         ["language": language, "preview": previewStage ?? "disabled", "final": finalStage ?? "disabled",
@@ -71,11 +73,18 @@ public struct SpeechRecognitionProfile {
                                explicitChoice: SpeechModelChoice? = nil,
                                qualifiedOverrides: [QualifiedSpeechOverride] = [],
                                enableQualifiedOverrides: Bool = false,
+                               previewBackend requestedPreview: PreviewBackend = .nemotron,
                                device: String = SpeechRecognitionProfile.currentDeviceIdentifier) throws -> Self {
         let effective = mode.effective(for: language)
+        // The CPU path is measured only for English Fast on Mac and is opt-in.
+        #if os(macOS)
+        let preview: PreviewBackend = requestedPreview == .whistle && language == "en" && effective == .fast ? .whistle : .nemotron
+        #else
+        let preview: PreviewBackend = .nemotron
+        #endif
         if let explicitChoice {
             guard explicitChoice.supports(language) else { throw ProfileError.unsupportedLanguage }
-            return .init(language: language, mode: effective, model: explicitChoice, origin: .explicitChoice, evidenceSHA256: nil)
+            return .init(language: language, mode: effective, model: explicitChoice, origin: .explicitChoice, evidenceSHA256: nil, previewBackend: preview)
         }
         let matching = qualifiedOverrides.filter {
             LanguagePair.qualityLanguages.contains(language) && $0.language == language && $0.device == device && $0.hasEvidenceReference && $0.model.supports(language)
@@ -83,15 +92,15 @@ public struct SpeechRecognitionProfile {
         // Conflicting catalog entries fail closed to baseline rather than choosing
         // by incidental array order. Disabled experiments never affect defaults.
         if enableQualifiedOverrides, matching.count == 1, let item = matching.first {
-            return .init(language: language, mode: effective, model: item.model, origin: .qualifiedOverride, evidenceSHA256: item.evidenceSHA256)
+            return .init(language: language, mode: effective, model: item.model, origin: .qualifiedOverride, evidenceSHA256: item.evidenceSHA256, previewBackend: preview)
         }
-        return .init(language: language, mode: effective, model: baselineModel(language: language), origin: .baseline, evidenceSHA256: nil)
+        return .init(language: language, mode: effective, model: baselineModel(language: language), origin: .baseline, evidenceSHA256: nil, previewBackend: preview)
     }
     /// Benchmark-only entrypoint. Candidate profiles cannot enter the override
     /// table without a separately reviewed evidence reference.
     public static func candidate(language: String, mode: DictationMode, runtimeID: String) throws -> Self {
         guard let model = SpeechModelChoice(rawValue: runtimeID) else { throw ProfileError.unavailableRuntime }
         guard model.supports(language) else { throw ProfileError.unsupportedLanguage }
-        return .init(language: language, mode: mode.effective(for: language), model: model, origin: .experimentalCandidate, evidenceSHA256: nil)
+        return .init(language: language, mode: mode.effective(for: language), model: model, origin: .experimentalCandidate, evidenceSHA256: nil, previewBackend: .nemotron)
     }
 }

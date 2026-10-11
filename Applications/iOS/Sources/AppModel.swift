@@ -961,6 +961,9 @@ import MurmurTranslation
                     return progress
                 }
                 switch value.stage {
+                case .unloading:
+                    self.preparationModel = L10n.text("Freeing memory…")
+                    self.warmingModels = false
                 case .speech:
                     self.preparationModel = L10n.text("Preparing dictation…")
                     self.warmingModels = false

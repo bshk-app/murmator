@@ -16,7 +16,7 @@ import MurmurTranslation
     var capturedSeconds: Double { get }
     func prepare(progress: @escaping (RecordingSession.Preparation) -> Void) async throws
     func start(microphoneUID: String?, recordingURL: URL?) async throws
-    func stop() async -> String
+    func stop() async throws -> String
     func replay(_ samples: [Float]) async throws -> SpeechReplayResult
     func snapshot() async -> CaptionSnapshot
     func close() async

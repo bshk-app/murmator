@@ -6,6 +6,8 @@ import SwiftUI
 /// Murmur's preferences window (a SwiftUI `Settings` scene): the push-to-talk
 /// shortcut and where the transcript goes on release.
 struct SettingsView: View {
+    let dictation: DictationController
+    @AppStorage(WhistleSetting.key) private var whistleFastEnabled = false
     @AppStorage(AnalyticsConsent.key) private var analyticsEnabled = false
     @AppStorage(RightCommandTrigger.key) private var rightCommand = true
     @AppStorage(HUDStyle.defaultsKey) private var hudStyle: HUDStyle = .caret
@@ -22,6 +24,12 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section {
+                MascotStylePicker()
+            } header: {
+                Text("Mascot")
+            }
+
             Section {
                 Toggle("Dictate with right ⌘", isOn: $rightCommand)
             } header: {
@@ -50,7 +58,21 @@ struct SettingsView: View {
             } header: {
                 Text("On-screen pill")
             } footer: {
-                Text("At the caret draws your words where they will be inserted, as they are recognised; nothing is typed until you finish. Apps that don't say where their caret is get the compact capsule. Compact is a small capsule at the bottom of the screen that only shows Murmur is listening. Full shows your words in a larger pill at the bottom of the screen.")
+                Text("At the caret draws your words where they will be inserted, as they are recognised; nothing is typed until you finish. Apps that don't say where their caret is get the compact capsule. Compact is a small capsule at the bottom of the screen that only shows Murmator is listening. Full shows your words in a larger pill at the bottom of the screen.")
+            }
+
+            Section {
+                Picker("English Fast model", selection: $whistleFastEnabled) {
+                    Text("Nemotron (GPU)").tag(false)
+                    Text("Whistle (CPU)").tag(true)
+                }
+                .accessibilityIdentifier("englishFastModelPicker")
+                .disabled(!dictation.canChangeModels)
+                .onChange(of: whistleFastEnabled) { _, _ in dictation.prepareCurrentMode() }
+            } header: {
+                Text("Experimental speech recognition")
+            } footer: {
+                Text("Whistle runs on this Mac and downloads a 17 MB model on first use. Choose English and Fast in the menu to use it.")
             }
 
             Section {
@@ -61,7 +83,7 @@ struct SettingsView: View {
             } header: {
                 Text("Privacy")
             } footer: {
-                Text("Helps fix bugs and improve Murmur. Only anonymous events and errors are sent — never your audio or transcripts. Dictation runs fully on-device either way.")
+                Text("Helps fix bugs and improve Murmator. Only anonymous events and errors are sent — never your audio or transcripts. Dictation runs fully on-device either way.")
             }
 
             Section {

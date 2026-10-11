@@ -37,9 +37,9 @@ mkdir -p "$work"
 gh release download "$TAG" --repo "$REPOSITORY" \
     --pattern '*.dmg' --pattern 'manifest.json' --dir "$work"
 
-dmg="$(find "$work" -maxdepth 1 -type f -name "Murmur-${SHORT_VERSION}.dmg" -print -quit)"
+dmg="$(find "$work" -maxdepth 1 -type f \( -name "Murmator-${SHORT_VERSION}.dmg" -o -name "Murmur-${SHORT_VERSION}.dmg" \) -print -quit)"
 manifest="$work/manifest.json"
-[[ -f "$dmg" ]] || die "$TAG has no Murmur-${SHORT_VERSION}.dmg asset"
+[[ -f "$dmg" ]] || die "$TAG has no Murmator or legacy Murmur DMG asset"
 [[ -f "$manifest" ]] || die "$TAG has no Zamok manifest.json asset"
 
 notes="$work/release-notes.md"
@@ -49,6 +49,13 @@ notes="$work/release-notes.md"
 note "== repairing Sparkle appcast from the published DMG =="
 "$ROOT/scripts/publish-appcast.sh" "$dmg" "$SHORT_VERSION" "$TAG" "$notes"
 note "== repairing Homebrew cask from the published DMG =="
-"$ROOT/scripts/publish-cask.sh" "$dmg" "$SHORT_VERSION" "$TAG"
+cask_metadata="$ROOT/Distribution/cask-murmur.json"
+if [[ "$(basename "$dmg")" == "Murmur-${SHORT_VERSION}.dmg" ]]; then
+    # Old immutable releases still contain Murmur.app.
+    cask_metadata="$work/cask-legacy.json"
+    jq '.name = "Murmur" | .appBundle = "Murmur.app"' \
+        "$ROOT/Distribution/cask-murmur.json" > "$cask_metadata"
+fi
+CASK_METADATA="$cask_metadata" "$ROOT/scripts/publish-cask.sh" "$dmg" "$SHORT_VERSION" "$TAG"
 
 printf 'Publishing repaired for %s.\n' "$TAG"

@@ -496,7 +496,7 @@ private struct HUDView: View {
     }
 
     private func mascotBubble<Content: View>(
-        _ mood: DictatorMascotMood,
+        _ mood: MascotMood,
         @ViewBuilder content: () -> Content
     ) -> some View {
         ZStack(alignment: .topLeading) {
@@ -507,9 +507,9 @@ private struct HUDView: View {
         .padding(.top, 38)
     }
 
-    private func mascotBadge(_ mood: DictatorMascotMood) -> some View {
+    private func mascotBadge(_ mood: MascotMood) -> some View {
         let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
-        return DictatorMascot(mood: mood, size: 42)
+        return MurmatorMascot(mood: mood, size: 42)
             .padding(4)
             .background(Mur.glass(scheme), in: shape)
             .background(.ultraThinMaterial, in: shape)

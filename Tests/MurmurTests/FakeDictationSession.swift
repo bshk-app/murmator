@@ -15,6 +15,10 @@ final class FakeDictationSession: RecordingSessioning {
     var startError: Error?
     var translationError: Error?
     var startGate: (() async -> Void)?
+    var prepareGate: (() async -> Void)?
+    var unloadGate: (() async -> Void)?
+    private(set) var prepareCount = 0
+    private(set) var unloadCount = 0
     private(set) var startedMode: DictationMode?
     private(set) var startedLanguage: String?
     private(set) var startCount = 0
@@ -22,7 +26,16 @@ final class FakeDictationSession: RecordingSessioning {
     private(set) var finishCount = 0
     private(set) var targets: [String?] = []
 
-    func prepare(_ configuration: RecordingSession.Configuration) async throws { self.configuration = configuration }
+    func prepare(_ configuration: RecordingSession.Configuration) async throws {
+        prepareCount += 1
+        state = .preparing
+        onEvent?(.preparation(.init(stage: .speech, fraction: nil)))
+        await prepareGate?()
+        try Task.checkCancellation()
+        self.configuration = configuration
+        ready = true
+        state = .ready
+    }
     func prepareTranslation(from: String, to: String, priority: ProcessingQuality,
                             onProgress: @escaping @MainActor @Sendable (TranslationDownloader.Progress) -> Void) async throws {}
     func start(microphoneUID: String?, recordingURL: URL?) async throws {
@@ -48,6 +61,12 @@ final class FakeDictationSession: RecordingSessioning {
         if let translationError { throw translationError }
         targets.append(target)
     }
-    func cancel() async { state = .ready }
-    func unload() async { ready = false; state = .idle }
+    func cancel() async { await unload() }
+    func unload() async {
+        unloadCount += 1
+        ready = false
+        await unloadGate?()
+        configuration = nil
+        state = .idle
+    }
 }

@@ -4,7 +4,7 @@ version: "3"
 # processes through AgentVault; real values never belong in this file or .env.
 
 vars:
-  APP_PATH: "{{.ROOT_DIR}}/build/Murmur.app"
+  APP_PATH: "{{.ROOT_DIR}}/build/Murmator.app"
   OUT_DIR: "{{.ROOT_DIR}}/out"
   SHORT_VERSION:
     sh: tr -d '[:space:]' < VERSION

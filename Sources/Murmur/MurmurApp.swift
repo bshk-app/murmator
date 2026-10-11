@@ -24,16 +24,14 @@ struct MurmurApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView()
+            SettingsView(dictation: appDelegate.dictation)
         }
     }
 
-    /// The compact dictator mascot glyph (`cat_fill` in Media.xcassets) rendered as a **template**
-    /// — monochrome, auto-tinted for light/dark menu bars — sized to the menu bar.
-    /// Falls back to an SF Symbol if the asset is somehow missing.
+    /// A friendly template cat stays legible in both light and dark menu bars.
     private static let menuIcon: NSImage = {
-        let image = NSImage(named: "cat_fill")
-            ?? NSImage(systemSymbolName: "mic.circle", accessibilityDescription: "Murmur")
+        let image = NSImage(systemSymbolName: "cat.fill", accessibilityDescription: "Murmator")
+            ?? NSImage(systemSymbolName: "mic.circle", accessibilityDescription: "Murmator")
             ?? NSImage()
         image.isTemplate = true
         image.size = NSSize(width: 18, height: 18)

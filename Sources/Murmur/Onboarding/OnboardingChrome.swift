@@ -42,7 +42,7 @@ struct OnTheme {
 
 /// Shared mascot artwork; the rail adds its own narrator bounce on top.
 func onboardingCat(_ size: CGFloat) -> some View {
-    DictatorMascot(mood: .idle, size: size)
+    MurmatorMascot(mood: .idle, size: size)
 }
 
 /// Filled upward triangle — the speech-bubble tail (apex points at the cat).
@@ -80,7 +80,7 @@ struct OnboardingRail: View {
     /// String-Catalog keys (already translated in `Localizable.xcstrings`); resolved
     /// at runtime for the typewriter via `Bundle.localizedString`.
     private static let narration: [String] = [
-        "Hi, I’m MurMur! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?",
+        "Hi, I’m Murmator! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?",
         "I need two macOS permissions to work. Tap each one — I’ll tell you exactly why.",
         "Pick the keys you’ll hold while you talk. Record your own combo, or grab a preset.",
         "Hang tight — I’m downloading my voice. This is the only big download, ever.",
@@ -244,8 +244,8 @@ struct OnboardingTitleBar: View {
         // top-left (the window uses a transparent title bar so this row IS the title
         // bar) — so we draw no fake lights, just leave them their space.
         HStack(spacing: 0) {
-            Text(verbatim: "Mur").foregroundStyle(t.ink)             // brand — not localized
-            Text(verbatim: "Mur").foregroundStyle(Mur.accent)
+            Text(verbatim: "Murm").foregroundStyle(t.ink)             // brand — not localized
+            Text(verbatim: "ator").foregroundStyle(Mur.accent)
             Text(verbatim: " · ").foregroundStyle(t.muted(0.5))
             Text(titleLabel).foregroundStyle(t.muted(0.62))          // step label — localized
         }
@@ -273,7 +273,7 @@ struct OnboardingFooter: View {
         case .permissions, .shortcut: return "Continue"
         case .download: return model.canContinue ? "Continue" : "Downloading…"
         case .tryIt: return "I’ve got it"
-        case .done: return "Start using MurMur"
+        case .done: return "Start using Murmator"
         }
     }
 
@@ -334,7 +334,7 @@ struct FinishedOverlay: View {
         VStack(spacing: 6) {
             onboardingCat(104)
                 .accessibilityHidden(true)   // decorative
-            Text("MurMur is live")
+            Text("Murmator is live")
                 .font(.system(size: 30, weight: .semibold, design: .serif))
                 .foregroundStyle(t.ink).padding(.top, 10)
             Text("Find me up in the menu bar whenever you want to talk.")

@@ -48,6 +48,7 @@ let project = Project(
             name: "Murmur",
             destinations: .macOS,
             product: .app,
+            productName: "Murmator",
             bundleId: "app.bshk.murmur",
             deploymentTargets: .macOS("15.0"),   // MLXAudioSTT (dev/nemo-mic) requires macOS 15
             infoPlist: .extendingDefault(with: [
@@ -55,11 +56,12 @@ let project = Project(
                 "CFBundleVersion": .string(appBuild),                // monotonic build (APP_BUILD) or version
                 "LSUIElement": true,                       // menu-bar agent: no Dock icon
                 "LSApplicationCategoryType": "public.app-category.productivity",
-                "CFBundleDisplayName": "Murmur",
+                "CFBundleDisplayName": "Murmator",
+                "CFBundleName": "Murmator",
                 "CFBundleLocalizations": ["en", "ru"],
                 "CFBundleDevelopmentRegion": "en",
                 "NSMicrophoneUsageDescription":
-                    "Murmur transcribes your speech on-device while you hold the dictation hotkey.",
+                    "Murmator transcribes your speech on-device while you hold the dictation hotkey.",
                 // Analytics key injected from MURMUR_POSTHOG_KEY (empty in source/fork builds → off).
                 "PostHogAPIKey": .string(posthogAPIKey),
                 // Sparkle in-app updates: the appcast lives in the app's own GitHub repo
@@ -71,8 +73,8 @@ let project = Project(
                 "SUEnableAutomaticChecks": true,
                 "SUScheduledCheckInterval": 86400,   // daily
             ]),
-            sources: ["Sources/Murmur/**/*.swift"],
-            resources: ["Sources/Murmur/Resources/**"],
+            sources: ["Sources/Murmur/**/*.swift", "Shared/Mascot/**/*.swift"],
+            resources: ["Sources/Murmur/Resources/**", "Shared/Mascot/Resources/**"],
             dependencies: [
                 .package(product: "MurmurKit"),
                 .package(product: "KeyboardShortcuts"),
@@ -81,6 +83,7 @@ let project = Project(
             ],
             settings: .settings(base: [
                 "SWIFT_VERSION": "5.0",
+                "PRODUCT_MODULE_NAME": "Murmur",
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",   // Media.xcassets/AppIcon (cat)
                 // Stable signature so the Accessibility (typing) grant persists.
                 "CODE_SIGN_STYLE": "Automatic",

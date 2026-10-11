@@ -4,7 +4,7 @@ set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-readonly OUTPUT="${1:-${ROOT}/build/Murmur.app}"
+readonly OUTPUT="${1:-${ROOT}/build/Murmator.app}"
 readonly SHORT_VERSION="${APP_VERSION:-$(read_version)}"
 readonly BUILD_NUMBER="${BUILD_NUMBER:-$("$ROOT/scripts/build-number.sh")}"
 readonly DERIVED_DATA="${MURMUR_DERIVED_DATA:-${ROOT}/build/DerivedData}"
@@ -21,7 +21,7 @@ require_semver APP_VERSION "$SHORT_VERSION"
 rm -rf "$DERIVED_DATA" "$OUTPUT"
 mkdir -p "$(dirname "$OUTPUT")"
 
-printf '== generating Murmur %s (%s) ==\n' "$SHORT_VERSION" "$BUILD_NUMBER" >&2
+printf '== generating Murmator %s (%s) ==\n' "$SHORT_VERSION" "$BUILD_NUMBER" >&2
 (
     cd "$ROOT"
     TUIST_APP_VERSION="$SHORT_VERSION" \
@@ -43,12 +43,12 @@ printf '== generating Murmur %s (%s) ==\n' "$SHORT_VERSION" "$BUILD_NUMBER" >&2
             build
 )
 
-readonly BUILT_APP="${DERIVED_DATA}/Build/Products/Release/Murmur.app"
+readonly BUILT_APP="${DERIVED_DATA}/Build/Products/Release/Murmator.app"
 [[ -d "$BUILT_APP" ]] || die "build produced no app at $BUILT_APP"
 ditto "$BUILT_APP" "$OUTPUT"
 
 readonly PLIST="${OUTPUT}/Contents/Info.plist"
-readonly EXECUTABLE="${OUTPUT}/Contents/MacOS/Murmur"
+readonly EXECUTABLE="${OUTPUT}/Contents/MacOS/Murmator"
 readonly METALLIB="${OUTPUT}/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib"
 [[ -f "$PLIST" ]] || die "staged app has no Info.plist"
 [[ -x "$EXECUTABLE" ]] || die "staged app has no executable"

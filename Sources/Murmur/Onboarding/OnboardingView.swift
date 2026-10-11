@@ -197,7 +197,7 @@ private struct DoneScreen: View {
             ScreenHeader(
                 eyebrow: "All set",
                 title: "You’re ready to talk",
-                lede: "MurMur is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.")
+                lede: "Murmator is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.")
 
             VStack(spacing: 9) {
                 checkRow(title: "Two voice models installed",

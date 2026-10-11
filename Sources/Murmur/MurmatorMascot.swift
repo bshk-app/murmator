@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-enum DictatorMascotMood: Equatable {
+enum MascotMood: Equatable {
     case idle, listening, transcribing, success, error
 
     var animation: (row: Int, count: Int, interval: TimeInterval, repeats: Bool) {
@@ -25,23 +25,27 @@ enum DictatorMascotMood: Equatable {
     }
 }
 
-/// Plays the approved atlas in the HUD, menu, and onboarding.
-struct DictatorMascot: View {
-    let mood: DictatorMascotMood
+/// Plays the selected companion in the HUD, menu, and onboarding.
+struct MurmatorMascot: View {
+    let mood: MascotMood
     var size: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage(MascotStyle.defaultsKey) private var storedStyle = MascotStyle.defaultStyle.rawValue
+    @AppStorage(MascotStyle.moustacheDefaultsKey) private var hasMoustache = true
 
     var body: some View {
-        Playback(mood: mood, size: size, reduceMotion: reduceMotion)
+        Playback(mood: mood, style: .resolve(storedStyle), size: size, reduceMotion: reduceMotion, hasMoustache: hasMoustache)
             .id(mood)
             .frame(width: size, height: size)
             .accessibilityHidden(true)
     }
 
     private struct Playback: View {
-        let mood: DictatorMascotMood
+        let mood: MascotMood
+        let style: MascotStyle
         let size: CGFloat
         let reduceMotion: Bool
+        let hasMoustache: Bool
         @State private var start = Date.now
         @State private var finished = false
 
@@ -49,16 +53,21 @@ struct DictatorMascot: View {
             let animation = mood.animation
             TimelineView(.animation(minimumInterval: animation.interval, paused: reduceMotion || finished)) { context in
                 let elapsed = finished ? Double(animation.count) * animation.interval : context.date.timeIntervalSince(start)
-                let column = mood.frame(at: elapsed, reduceMotion: reduceMotion)
-                let width = size * 192 / 208
-                Image("murmur_pet")
-                    .renderingMode(.original)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: width * 8, height: size * 11)
-                    .offset(x: -CGFloat(column) * width, y: -CGFloat(animation.row) * size)
-                    .frame(width: width, height: size, alignment: .topLeading)
-                    .clipped()
+                if style == .classic && hasMoustache {
+                    let column = mood.frame(at: elapsed, reduceMotion: reduceMotion)
+                    let width = size * 192 / 208
+                    Image("murmur_pet")
+                        .renderingMode(.original)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: width * 8, height: size * 11)
+                        .offset(x: -CGFloat(column) * width, y: -CGFloat(animation.row) * size)
+                        .frame(width: width, height: size, alignment: .topLeading)
+                        .clipped()
+                } else {
+                    AnimatedMascotPortrait(style: style, expression: mood.expression, elapsed: elapsed, reduceMotion: reduceMotion, hasMoustache: hasMoustache)
+                        .frame(width: size, height: size)
+                }
             }
             .task(id: reduceMotion) {
                 start = .now
@@ -71,6 +80,18 @@ struct DictatorMascot: View {
                     // SwiftUI cancels playback when the state changes or the view disappears.
                 }
             }
+        }
+    }
+}
+
+private extension MascotMood {
+    var expression: MascotExpression {
+        switch self {
+        case .idle: .happy
+        case .listening: .listening
+        case .transcribing: .thinking
+        case .success: .celebrating
+        case .error: .sad
         }
     }
 }

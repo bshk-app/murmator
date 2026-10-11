@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, SPUS
         let host = NSHostingController(rootView: OnboardingView(model: onboarding).frame(width: 880, height: 640))
         host.safeAreaRegions = []   // content runs under the transparent title bar (our drawn row IS the bar)
         let window = NSWindow(contentViewController: host)
-        window.title = "MurMur Setup"
+        window.title = NSLocalizedString("Murmator Setup", comment: "Setup window title")
         window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
