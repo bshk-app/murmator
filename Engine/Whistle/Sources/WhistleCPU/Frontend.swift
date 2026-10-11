@@ -30,8 +30,10 @@ public final class WhistleFrontend {
     else { throw DecoderError.invalid("invalid mel filterbank or FFT setup") }
     self.setup = setup
     filterbank = bank.map(Double.init)
-    window = (0..<512).map { i in
-      (56..<456).contains(i) ? 0.5 - 0.5 * cos(2 * .pi * Double(i - 56) / 400) : 0
+    window = (0..<512).map { i -> Double in
+      guard (56..<456).contains(i) else { return 0 }
+      let phase = 2 * Double.pi * Double(i - 56) / 400
+      return 0.5 - 0.5 * cos(phase)
     }
   }
 
