@@ -8,6 +8,7 @@ Reusable local Swift packages shared by the macOS compatibility facade, MurMur L
 | `MurmurSpeech` | Microphone capture, Silero VAD, live ASR, independent Core ML correctors, model preparation and replay. |
 | `MurmurTranslation` | Mozilla preview, strict OPUS correction, verified downloads and translation sessions. |
 | `MurmurSession` | Shared foreground preparation, capture lifecycle, corrected transcript and translation orchestration for iOS and macOS. |
+| `MurmurCaptions` | macOS captions band: layout, appearance, smoothly scrolling transcript and translation tracks. Takes settings as values; where the band goes and how settings persist stay with the app. Used by the Murmur captions overlay and by Kafedra's stage. |
 
 Consumers depend on the products directly. `MurmurKit` re-exports them for existing macOS callers; the mobile applications do not depend on the desktop app or compile its files.
 
@@ -33,6 +34,7 @@ The minimal vendored MLX Audio source contains the tested checkpoint fixes; see 
 
 ```sh
 swift test --package-path Engine/Core
+swift test --package-path Engine/Captions
 bash Applications/iOS/build.sh CODE_SIGNING_ALLOWED=NO
 bash Prototypes/iOS/build.sh CODE_SIGNING_ALLOWED=NO
 ```
