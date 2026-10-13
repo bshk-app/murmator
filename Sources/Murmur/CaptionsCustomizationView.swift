@@ -1,4 +1,5 @@
 import AppKit
+import MurmurCaptions
 import SwiftUI
 
 struct CaptionsCustomizationView: View {

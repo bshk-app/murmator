@@ -36,6 +36,7 @@ let project = Project(
     name: "Murmur",
     packages: [
         .local(path: "MurmurKit"),
+        .local(path: "Engine/Captions"),   // captions band UI, shared with Kafedra
         .remote(url: "https://github.com/sindresorhus/KeyboardShortcuts",
                 requirement: .upToNextMajor(from: "2.0.0")),
         .remote(url: "https://github.com/PostHog/posthog-ios",
@@ -77,6 +78,7 @@ let project = Project(
             resources: ["Sources/Murmur/Resources/**", "Shared/Mascot/Resources/**"],
             dependencies: [
                 .package(product: "MurmurKit"),
+                .package(product: "MurmurCaptions"),
                 .package(product: "KeyboardShortcuts"),
                 .package(product: "PostHog"),
                 .package(product: "Sparkle"),

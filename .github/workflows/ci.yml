@@ -29,10 +29,11 @@ jobs:
       - name: Test MurmurKit
         run: cd MurmurKit && swift test
 
-      - name: Test shared core and translation engine
+      - name: Test shared core, translation engine and captions UI
         run: |
           swift test --package-path Engine/Core
           swift test --package-path Engine/Translation
+          swift test --package-path Engine/Captions
 
       - name: Verify pinned quality catalogs and release gate
         run: |

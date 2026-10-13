@@ -1,38 +1,6 @@
 import AppKit
+import MurmurCaptions
 import Observation
-
-struct CaptionsColor: Codable, Equatable {
-    var red: Double
-    var green: Double
-    var blue: Double
-
-    var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: 1) }
-
-    init(_ color: NSColor) {
-        let rgb = color.usingColorSpace(.sRGB) ?? .white
-        red = rgb.redComponent; green = rgb.greenComponent; blue = rgb.blueComponent
-    }
-}
-
-struct CaptionsAppearance: Codable, Equatable {
-    var fontFamily = ""
-    var automaticFontSize = true
-    var fontSize = 25.0
-    var textColor = CaptionsColor(.white)
-    var translationColor = CaptionsColor(NSColor(srgbRed: 1, green: 0.88, blue: 0.5, alpha: 1))
-    var backgroundColor = CaptionsColor(NSColor(srgbRed: 0.04, green: 0.04, blue: 0.04, alpha: 1))
-    var backgroundOpacity = 1.0
-
-    func pointSize(screenHeight: CGFloat) -> CGFloat {
-        automaticFontSize ? min(max((screenHeight / 44).rounded(), 14), 48) : min(max(fontSize, 14), 72)
-    }
-
-    static func font(size: CGFloat, family: String = "") -> NSFont {
-        if !family.isEmpty,
-           let font = NSFontManager.shared.font(withFamily: family, traits: [], weight: 5, size: size) { return font }
-        return .systemFont(ofSize: size, weight: .medium)
-    }
-}
 
 /// Relative to one display's visible area, so a resolution/Dock change does not
 /// strand the panel off screen. Different displays keep separate placements.
