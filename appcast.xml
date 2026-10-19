@@ -3,6 +3,35 @@
     <channel>
         <title>Murmur</title>
         <item>
+            <title>0.6.0</title>
+            <pubDate>Sun, 11 Oct 2026 17:15:35 +0000</pubDate>
+            <sparkle:version>1099</sparkle:version>
+            <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<p>Murmur is now called <strong>Murmator</strong>, with a new icon and a choice of mascots.<br>
+Your saved settings stay with you.</p>
+<h3>Easier to get started</h3>
+<ul>
+<li>See when speech recognition is loading, follow its progress, and cancel<br>
+the wait if you change your mind.</li>
+<li>Free memory with <strong>Unload</strong> when you are done. Downloaded speech models<br>
+stay on your Mac, ready to use again.</li>
+<li>Try <strong>Whistle</strong>, a smaller speech model for English in <strong>Fast</strong> mode, under<br>
+<strong>Settings → Experimental</strong>. It is optional and experimental; Nemotron<br>
+remains the default.</li>
+</ul>
+<h3>Smoother dictation</h3>
+<ul>
+<li>Switching recognition modes quickly now keeps your last choice.</li>
+<li>The menu says <strong>Listening</strong> only after the microphone has started.<br>
+Cancelling loading does not turn the microphone on.</li>
+<li>Fixed a case where Whistle repeated the end of a sentence. If recognition<br>
+cannot finish, the app shows an error so you can retry.</li>
+</ul>]]></description>
+            <enclosure url="https://github.com/bshk-app/murmur/releases/download/murmur-v0.6.0/Murmator-0.6.0.dmg" length="44583058" type="application/octet-stream" sparkle:edSignature="+ecasRDG+CmadB82xsLubqgrTL8IY/HaEgrS7ZSkw8SUB/IkgwOof6e60X156esJ3w62BnstxQkVk/n16fO8Cw=="/>
+        </item>
+        <item>
             <title>0.5.0</title>
             <pubDate>Sat, 10 Oct 2026 17:26:46 +0000</pubDate>
             <sparkle:version>1090</sparkle:version>
