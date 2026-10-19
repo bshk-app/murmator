@@ -3,6 +3,54 @@
     <channel>
         <title>Murmur</title>
         <item>
+            <title>0.7.0</title>
+            <pubDate>Mon, 19 Oct 2026 21:06:11 +0000</pubDate>
+            <sparkle:version>1126</sparkle:version>
+            <sparkle:shortVersionString>0.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h3>Added</h3>
+<ul>
+<li>Bring your own cloud providers for recognition, correction and translation.<br>
+Choose a separate provider and model for each step, or keep it on this Mac.<br>
+Connections include OpenAI, ChatGPT plan sign-in, Anthropic, Dictator,<br>
+Deepgram, OpenRouter, Featherless and OpenAI-compatible servers. Available<br>
+operations depend on the connection and model; no paid model is chosen for you.</li>
+<li>Search large model catalogs instead of scrolling through long menus.</li>
+<li>Set reasoning effort for a correction or translation model. OpenRouter can<br>
+prefer low latency or a particular server, with an explicit fallback choice.</li>
+<li>Keep quick controls in the menu bar and use a separate window that stays open<br>
+when you switch apps. Settings now has separate Models and Providers pages.</li>
+<li>Learn microphone selection, recognition modes, correction, translation and<br>
+dictation at the caret through a step-by-step setup tour.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>The optional corrector receives the finished text, including sentence context.<br>
+Invalid model output keeps the original text. Long recordings are processed<br>
+in bounded sections with neighbouring context.</li>
+<li>Press Return again while finishing to skip optional correction and insert the<br>
+final recognized text. Recognition still finishes before anything is inserted.</li>
+<li>The mascot advises during errors or a long wait; ordinary dictation keeps its<br>
+compact indicator and live draft.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a crash after inserting dictated text when diagnostic stderr was no<br>
+longer writable. Request diagnostics use system logging without transcript<br>
+contents or API keys.</li>
+<li>Live recognition receives retained speech at the start of a phrase, keeping<br>
+words that precede speech detection.</li>
+<li>Changing a connection during a recording keeps its original endpoint and key<br>
+together. New settings apply to the next recording.</li>
+<li>Corrected model-list counts, stale search results and connection-check status.</li>
+</ul>
+<p>Cloud correction quality depends on the selected model. This release does not<br>
+claim that a model benchmark or catalog entry guarantees correct recognition,<br>
+correction, account access or a particular response time.</p>]]></description>
+            <enclosure url="https://github.com/bshk-app/murmator/releases/download/murmur-v0.7.0/Murmator-0.7.0.dmg" length="46696221" type="application/octet-stream" sparkle:edSignature="yOcfH3hyxv1X0ciEIYyRM2b45jK3/CrbDQ54eAVSz74JHgUCFsvjBP4W6l6eO6ZmYZwo6msjkJvKv/3pkQk/AA=="/>
+        </item>
+        <item>
             <title>0.6.0</title>
             <pubDate>Sun, 11 Oct 2026 17:15:35 +0000</pubDate>
             <sparkle:version>1099</sparkle:version>
