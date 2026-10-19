@@ -5,7 +5,15 @@ import Foundation
 /// transition and gate. Foundation-only so it unit-tests without MLX.
 public enum OnboardingFlow {
     public enum Step: Int, CaseIterable, Sendable {
-        case welcome, permissions, shortcut, download, tryIt, done
+        case welcome, microphone, models, fast, hybrid, accurate, corrector, translation, caret, done
+
+        /// Steps with a recording example. Trying it is optional.
+        public var isExample: Bool {
+            switch self {
+            case .fast, .hybrid, .accurate, .corrector, .translation, .caret: return true
+            case .welcome, .microphone, .models, .done: return false
+            }
+        }
     }
 
     /// Rounded on-disk sizes (GB) of the two model repositories.
@@ -19,19 +27,18 @@ public enum OnboardingFlow {
         public var accessibilityGranted = false
         public var fastFraction = 0.0       // 0…1
         public var accurateFraction = 0.0   // 0…1
-        public var didTry = false           // ≥1 successful try-it dictation
+        public var didTry = false           // ≥1 successful example dictation
         public init() {}
     }
 
     /// Continue is allowed unless the current step has an unmet requirement.
-    /// Mic is required (no dictation without it); Accessibility is *not* gated
-    /// (skippable — HUD-only works without it).
+    /// The microphone and the models are required; every example is optional,
+    /// and Accessibility is never gated (the practice field works without it).
     public static func canContinue(_ s: State) -> Bool {
         switch s.step {
-        case .permissions: return s.micGranted
-        case .download:    return s.fastFraction >= 1 && s.accurateFraction >= 1
-        case .tryIt:       return s.didTry
-        case .welcome, .shortcut, .done: return true
+        case .microphone: return s.micGranted
+        case .models:     return s.fastFraction >= 1 && s.accurateFraction >= 1
+        default:          return true
         }
     }
 
@@ -40,18 +47,5 @@ public enum OnboardingFlow {
     }
     public static func back(_ step: Step) -> Step {
         Step(rawValue: max(step.rawValue - 1, 0)) ?? .welcome
-    }
-
-    public struct DownloadMetrics: Sendable {
-        public let downloadedGB: Double
-        public let totalGB: Double
-        public let remainingGB: Double
-        public let done: Bool
-    }
-    public static func downloadMetrics(fast: Double, accurate: Double) -> DownloadMetrics {
-        let dl = fastGB * fast + accurateGB * accurate
-        let done = fast >= 1 && accurate >= 1
-        return DownloadMetrics(downloadedGB: dl, totalGB: totalGB,
-                               remainingGB: max(0, totalGB - dl), done: done)
     }
 }

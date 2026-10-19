@@ -20,20 +20,36 @@ import Foundation
 /// and an untestable cache is how stale translations survive a correction.
 public protocol PhraseTranslating: Sendable {
     func translateOrEmpty(_ text: String, from source: String, to target: String) async -> String
+    /// Only successful results may enter the caption cache, including "".
+    func translate(_ text: String, from source: String, to target: String) async throws -> String
+}
+
+private enum PhraseTranslationFailure: Error { case unavailable }
+
+public extension PhraseTranslating {
+    /// Compatibility for best-effort engines that do not expose their errors.
+    /// Such an engine cannot distinguish empty output from failure; implement
+    /// `translate` to preserve successful empty results in the cache.
+    func translate(_ text: String, from source: String, to target: String) async throws -> String {
+        let result = await translateOrEmpty(text, from: source, to: target)
+        guard !result.isEmpty else { throw PhraseTranslationFailure.unavailable }
+        return result
+    }
 }
 
 extension TranslationService: PhraseTranslating {}
 
 public actor CaptionTranslator {
     private let service: any PhraseTranslating
-    /// Keyed by segment id, holding the source text it was made from — a batch
-    /// pass rewrites a phrase in place, and the stale translation of the
-    /// superseded text must not survive that correction.
-    private var done: [UInt64: (source: String, translated: String)] = [:]
-    /// The live tail, cached by its exact text. The draft is rewritten far more
-    /// often than it actually changes wording, and re-translating an identical
-    /// string would burn the core for nothing.
-    private var draftCache: (source: String, translated: String)?
+    /// Actor isolation does not prevent an old await from resuming after reset.
+    private var generation = UUID()
+    /// Keyed by segment id, holding its exact text and language pair. Neither
+    /// a batch correction nor a language switch may reuse an old translation.
+    private var done: [UInt64: (source: String, pair: LanguagePair, translated: String)] = [:]
+    /// The live tail, cached by its exact text and language pair. The draft is
+    /// rewritten far more often than it actually changes wording, and
+    /// re-translating an identical string would burn the core for nothing.
+    private var draftCache: (source: String, pair: LanguagePair, translated: String)?
 
     public init(service: any PhraseTranslating) {
         self.service = service
@@ -52,6 +68,8 @@ public actor CaptionTranslator {
                             draft: String = "",
                             from source: String,
                             to target: String) async -> String {
+        let token = generation
+        let pair = LanguagePair(source: source, target: target)
         // Anything the transcript dropped is gone for good; without this the
         // map grows for the whole talk.
         let liveIDs = Set(segments.map(\.id))
@@ -64,7 +82,7 @@ public actor CaptionTranslator {
             let text = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
 
-            if let cached = done[segment.id], cached.source == text {
+            if let cached = done[segment.id], cached.source == text, cached.pair == pair {
                 out.append(cached.translated)
                 continue
             }
@@ -72,27 +90,34 @@ public actor CaptionTranslator {
             // after a pause, and the session may end mid-way through them.
             if Task.isCancelled { break }
 
-            let translated = await service.translateOrEmpty(text, from: source, to: target)
-            done[segment.id] = (source: text, translated: translated)
-            if !translated.isEmpty { out.append(translated) }
+            let translated = try? await service.translate(text, from: source, to: target)
+            guard generation == token, !Task.isCancelled else { return "" }
+            if let translated {
+                done[segment.id] = (source: text, pair: pair, translated: translated)
+                out.append(translated)
+            }
         }
 
         let tail = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !tail.isEmpty, !Task.isCancelled {
-            if let cached = draftCache, cached.source == tail {
+            if let cached = draftCache, cached.source == tail, cached.pair == pair {
                 out.append(cached.translated)
             } else {
-                let translated = await service.translateOrEmpty(tail, from: source, to: target)
-                draftCache = (source: tail, translated: translated)
-                if !translated.isEmpty { out.append(translated) }
+                let translated = try? await service.translate(tail, from: source, to: target)
+                guard generation == token, !Task.isCancelled else { return "" }
+                if let translated {
+                    draftCache = (source: tail, pair: pair, translated: translated)
+                    out.append(translated)
+                }
             }
         }
 
-        return out.joined(separator: " ")
+        return out.filter { !$0.isEmpty }.joined(separator: " ")
     }
 
     /// Forget everything — a new talk starts with an empty second line.
     public func reset() {
+        generation = UUID()
         done.removeAll()
         draftCache = nil
     }

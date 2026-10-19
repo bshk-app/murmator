@@ -3,9 +3,12 @@ import MurmurCore
 
 /// Continuous preview and strict OPUS correction, independent of the app UI.
 public actor TranslationSession {
+    typealias Translate = @Sendable (String, String, String) async throws -> String
     private var selectedQuality = ProcessingQuality.quality
     private let fast: TranslationService
     private let quality: TranslationService
+    private let fastTranslation: Translate
+    private let qualityTranslation: Translate
     private let modelsRoot: URL
     private var generation = UUID()
     private var pair: LanguagePair?
@@ -26,10 +29,23 @@ public actor TranslationSession {
     public init(modelsRoot: URL, qualityModelsRoots: [URL] = [],
                 profileCatalog: TranslationProfileCatalog = .current, device: TranslationDeviceClass = .current,
                 assetRegistry: QualityModelAssetRegistry = .current) {
+        self.init(modelsRoot: modelsRoot, qualityModelsRoots: qualityModelsRoots,
+                  profileCatalog: profileCatalog, device: device, assetRegistry: assetRegistry,
+                  fastTranslation: nil, qualityTranslation: nil)
+    }
+
+    init(modelsRoot: URL, qualityModelsRoots: [URL] = [],
+         profileCatalog: TranslationProfileCatalog = .current, device: TranslationDeviceClass = .current,
+         assetRegistry: QualityModelAssetRegistry = .current,
+         fastTranslation: Translate?, qualityTranslation: Translate?) {
         self.modelsRoot = modelsRoot
-        fast = TranslationService(modelsRoot: modelsRoot)
-        quality = TranslationService(modelsRoot: modelsRoot, qualityModelsRoots: qualityModelsRoots,
+        let fast = TranslationService(modelsRoot: modelsRoot)
+        let quality = TranslationService(modelsRoot: modelsRoot, qualityModelsRoots: qualityModelsRoots,
                                      profileCatalog: profileCatalog, scenario: .dictation, device: device, assetRegistry: assetRegistry)
+        self.fast = fast
+        self.quality = quality
+        self.fastTranslation = fastTranslation ?? { try await fast.translate($0, from: $1, to: $2) }
+        self.qualityTranslation = qualityTranslation ?? { try await quality.translateQuality($0, from: $1, to: $2).text }
     }
     public func prepare(from: String, to: String, priority: ProcessingQuality = .quality, onProgress: @escaping @MainActor @Sendable (TranslationDownloader.Progress) -> Void = { _ in }) async throws {
         if selectedQuality != priority { cancel() }
@@ -108,8 +124,9 @@ public actor TranslationSession {
         guard value.revision >= snapshot.revision else { return }
         snapshot = value; self.onUpdate = onUpdate; self.onFailure = onFailure; self.onSegments = onSegments
         let retained = Set(value.confirmed.map(\.id))
-        for id in Array(requested.keys) where !retained.contains(id) {
+        for id in Set(requested.keys).union(failed) where !retained.contains(id) {
             jobs.removeValue(forKey: id)?.cancel(); requested[id]=nil; corrections[id]=nil; previews[id]=nil
+            failed.remove(id)
         }
         let token = generation
         for phrase in value.confirmed where phrase.state == .confirmed && !phrase.text.isEmpty && requested[phrase.id] != phrase.text {
@@ -120,7 +137,16 @@ public actor TranslationSession {
                     let result = try await finalTranslation(phrase.text, from: from, to: to)
                     guard !Task.isCancelled, generation == token, requested[phrase.id] == phrase.text else { return }
                     corrections[phrase.id]=(phrase.text,result); jobs[phrase.id]=nil; render()
-                } catch { if generation == token && !Task.isCancelled { onFailure(error.localizedDescription); jobs[phrase.id]=nil; failed.insert(phrase.id); render() } }
+                } catch {
+                    guard generation == token, !Task.isCancelled, requested[phrase.id] == phrase.text else { return }
+                    // A missing model or another transient error is not a
+                    // completed translation. Retry on the next snapshot.
+                    requested[phrase.id] = nil
+                    jobs[phrase.id] = nil
+                    failed.insert(phrase.id)
+                    onFailure(error.localizedDescription)
+                    render()
+                }
             }
         }
         if previewTask == nil, Date().timeIntervalSince(lastPreview) >= 0.5 {
@@ -144,7 +170,7 @@ public actor TranslationSession {
     /// Mozilla where available; otherwise the prepared OPUS route also supplies
     /// previews. Lack of a Mozilla pack must not disable an OPUS language.
     public func preview(_ text: String, from: String, to: String) async throws -> String {
-        if fast.route(from: from, to: to) != nil { return try await fast.translate(text, from: from, to: to) }
+        if fast.route(from: from, to: to) != nil { return try await fastTranslation(text, from, to) }
         return try await finalTranslation(text, from: from, to: to)
     }
     public func finish(_ text: String, from: String, to: String) async throws -> String {
@@ -181,8 +207,8 @@ public actor TranslationSession {
         if let failure { throw failure }
     }
     private func finalTranslation(_ text: String, from: String, to: String) async throws -> String {
-        if selectedQuality == .fast { return try await fast.translate(text, from: from, to: to) }
-        return try await quality.translateQuality(text, from: from, to: to).text
+        if selectedQuality == .fast { return try await fastTranslation(text, from, to) }
+        return try await qualityTranslation(text, from, to)
     }
     public func cancel() {
 

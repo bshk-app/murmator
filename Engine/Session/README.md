@@ -44,3 +44,30 @@ Tests inject speech/translation drivers and require no microphone or model
 weights. Real model validation must use Release builds on Apple Silicon with
 Metal resources; compilation and deterministic tests do not establish latency,
 quality, physical-device routing or hour-long endurance.
+
+## Optional text editing
+
+`Configuration(postProcessing: true, postProcessingModelID: nil)` enables a text
+editing pass at Stop. Whisper base detects the final source language from a
+bounded speech sample. `TranscriptEditing` then corrects the finished original
+in bounded sections; it does not transcribe the audio again. The default provider
+is `LocalTranscriptEditor` from `Engine/PostProcessing`. An alternate provider,
+including a future cloud editor, can be injected using `textEditor:` in the public
+initializer. Model selection belongs to that provider; capture and Whisper LID
+stay independent of it.
+
+Editing preserves utterance IDs, audio ranges and metadata. The optional original
+transcript in `Result` lets consumers save the pre-edit version. Editor failures
+keep the finished ASR text; cancellation rejects late output and waits for cleanup.
+`Result.sourceLanguage` describes the Whisper language, while the configuration
+keeps the language/profile selected for the next recording. Final translation uses
+the detected language and corrected text, with stale translations invalidated.
+
+Live ASR and translation weights are released before loading the LLM. Consumers
+must prepare before starting the next recording. A temporary WAV is used when the
+caller supplied no recording URL; it is deleted after finishing/cancellation.
+Caller-owned recordings are never deleted. The option defaults to off.
+
+Current model research and the distinction between deployment defaults and
+task-specific quality results are in
+[the model comparison](../PostProcessing/Qualification/MODELS.md).

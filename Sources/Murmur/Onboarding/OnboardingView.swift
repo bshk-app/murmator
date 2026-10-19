@@ -1,11 +1,10 @@
 import MurmurKit
 import SwiftUI
 
-/// The first-run onboarding window (design: MurMur Onboarding.dc.html). A 6-step
-/// wizard: title bar + left narrator rail + a right content pane that switches on
-/// `OnboardingFlow.Step`, with a Back/Continue footer gated by `model.canContinue`.
-/// All six steps are real (mic/accessibility, shortcut, live download, in-window
-/// try-it). Theme-adaptive via `OnTheme`.
+/// The tour window (design: Murmator Mac Tour v3.dc.html). Title bar + guide rail
+/// + a content pane that switches on `OnboardingFlow.Step`, with a Back/Continue
+/// footer. The pane never scrolls: every step is a `StepPage` of fixed zones, and
+/// only long text scrolls inside its own box.
 struct OnboardingView: View {
     @Bindable var model: OnboardingModel
     @Environment(\.colorScheme) private var scheme
@@ -19,10 +18,9 @@ struct OnboardingView: View {
                 HStack(spacing: 0) {
                     OnboardingRail(model: model)
                     VStack(spacing: 0) {
-                        ScrollView {
-                            content.padding(.init(top: 30, leading: 36, bottom: 26, trailing: 36))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                        content
+                            .padding(.init(top: 22, leading: 32, bottom: 14, trailing: 32))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         if !model.finished { OnboardingFooter(model: model) }
                     }
                     .background(t.surface)
@@ -34,44 +32,187 @@ struct OnboardingView: View {
     }
 
     @ViewBuilder private var content: some View {
-        switch model.flow.step {
+        switch model.step {
         case .welcome:     WelcomeScreen()
-        case .permissions: PermissionsScreen(model: model)   // Phase 2
-        case .shortcut:    ShortcutScreen(model: model)       // Phase 2
-        case .download:    DownloadScreen(model: model)       // Phase 3
-        case .tryIt:       TryItScreen(model: model)          // Phase 4
+        case .microphone:  MicrophoneScreen(model: model)
+        case .models:      ModelsScreen(model: model)
+        case .fast, .hybrid, .accurate: ModeLessonScreen(model: model)
+        case .corrector:   CorrectorScreen(model: model)
+        case .translation: TranslationScreen(model: model)
+        case .caret:       CaretLessonScreen(model: model)
         case .done:        DoneScreen(model: model)
         }
     }
 }
 
-// MARK: - Shared screen header (eyebrow + serif title + lede)
+// MARK: - Fixed page zones
 
-private struct ScreenHeader: View {
-    let eyebrow: LocalizedStringKey
+/// One tour page: header, context strip, controls, stage, status and action
+/// rows, each with a fixed height, so no control moves when the text inside a
+/// zone changes.
+struct StepPage<Strip: View, Controls: View, Stage: View, Status: View, Action: View>: View {
+    let step: OnboardingFlow.Step
     let title: LocalizedStringKey
     let lede: LocalizedStringKey
+    @ViewBuilder var strip: Strip
+    @ViewBuilder var controls: Controls
+    @ViewBuilder var stage: Stage
+    @ViewBuilder var status: Status
+    @ViewBuilder var action: Action
     @Environment(\.colorScheme) private var scheme
 
     private var t: OnTheme { OnTheme(scheme) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(eyebrow)
-                .tracking(1.4).murFont(11, weight: .bold)
-                .foregroundStyle(Mur.accent)
-            Text(title)
-                .murFont(32, weight: .semibold, design: .serif)
-                .foregroundStyle(t.ink).padding(.top, 10)
-            Text(lede)
-                .murFont(14.5).lineSpacing(4)
-                .foregroundStyle(t.muted(0.66))
-                .frame(maxWidth: 444, alignment: .leading).padding(.top, 11)
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                (Text("Step \(step.rawValue + 1) of \(OnboardingFlow.Step.allCases.count)")
+                    + Text(verbatim: " · ") + Text(step.title))
+                    .tracking(1.2).murFont(11, weight: .bold)
+                    .foregroundStyle(Mur.accent)
+                Text(title)
+                    .murFont(25, weight: .semibold, design: .serif)
+                    .foregroundStyle(t.ink).lineLimit(1).minimumScaleFactor(0.8)
+                    .padding(.top, 8)
+                Text(lede)
+                    .murFont(13.5).lineSpacing(2)
+                    .foregroundStyle(t.muted(0.7))
+                    .lineLimit(2, reservesSpace: true)
+                    .padding(.top, 7)
+            }
+            .frame(height: 96, alignment: .topLeading)
+            HStack(spacing: 6) { strip }.frame(height: 28, alignment: .leading)
+            HStack(spacing: 12) { controls }.frame(height: 40, alignment: .leading)
+            stage.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            HStack(spacing: 8) { status }.frame(height: 22, alignment: .leading)
+            HStack(spacing: 16) { action }.frame(height: 44, alignment: .leading)
         }
     }
 }
 
-// MARK: - Step 0: Welcome (full)
+/// How a status line reads. "Done" is neutral on purpose: finishing does not
+/// mean the text is right.
+enum StatusTone { case neutral, working, live, ok, error }
+
+struct StatusLine: View {
+    let text: String
+    var tone: StatusTone = .neutral
+    @Environment(\.colorScheme) private var scheme
+
+    private var t: OnTheme { OnTheme(scheme) }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle().fill(dot).frame(width: 8, height: 8)
+                .background(Circle().fill(tone == .live ? OnTheme.rgb(224, 83, 61, 0.22) : .clear).frame(width: 14, height: 14))
+                .accessibilityHidden(true)
+            Text(verbatim: text)
+                .murFont(12.5, weight: tone == .error ? .semibold : .medium)
+                .foregroundStyle(tone == .error ? Mur.error : (tone == .neutral ? t.muted(0.72) : t.ink))
+                .lineLimit(1).truncationMode(.tail)
+        }
+    }
+
+    private var dot: Color {
+        switch tone {
+        case .neutral: return t.muted(0.4)
+        case .working: return Mur.accent
+        case .live: return OnTheme.rgb(224, 83, 61)
+        case .ok: return t.ok
+        case .error: return Mur.error
+        }
+    }
+}
+
+/// A plain text action next to the status or the primary button.
+struct LinkButton: View {
+    let title: LocalizedStringKey
+    var visible = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title).murFont(12.5, weight: .semibold).foregroundStyle(Mur.accent)
+        }
+        .buttonStyle(.plain)
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+        .accessibilityHidden(!visible)
+    }
+}
+
+/// The 200 × 44 primary slot. Label changes never change its size.
+struct PrimarySlot: View {
+    let title: String
+    var enabled = true
+    var live = false
+    var plain = false
+    @Environment(\.colorScheme) private var scheme
+
+    private var t: OnTheme { OnTheme(scheme) }
+
+    var body: some View {
+        HStack(spacing: 9) {
+            if live { TourLevelBars(color: .white) }
+            Text(verbatim: title).murFont(14, weight: .semibold).lineLimit(1)
+        }
+        .foregroundStyle(live ? .white : (plain ? t.ink : OnTheme.rgb(36, 31, 28)))
+        .frame(width: 200, height: 44)
+        .background(fill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .opacity(enabled ? 1 : 0.38)
+    }
+
+    private var fill: AnyShapeStyle {
+        if live { return AnyShapeStyle(OnTheme.rgb(224, 83, 61)) }
+        if plain { return AnyShapeStyle(t.line(0.1)) }
+        return AnyShapeStyle(Mur.accent)
+    }
+}
+
+/// A small fact about the current example (mode, microphone, corrector…).
+struct ContextChip: View {
+    let label: LocalizedStringKey
+    let value: String
+    var accent = false
+    @Environment(\.colorScheme) private var scheme
+
+    private var t: OnTheme { OnTheme(scheme) }
+
+    var body: some View {
+        (Text(label).foregroundColor(t.muted(0.6)) + Text(verbatim: " " + value))
+            .murFont(11.5, weight: .semibold)
+            .foregroundStyle(accent ? Mur.accent : t.ink)
+            .lineLimit(1)
+            .padding(.horizontal, 9).frame(height: 24)
+            .background(accent ? Mur.accent.opacity(0.14) : t.line(0.07),
+                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+}
+
+/// Animated level bars (mirrors the HUD's `LevelBars`): the microphone is open.
+struct TourLevelBars: View {
+    var color: Color
+    var count: Int = 4
+    var barHeight: CGFloat = 14
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var up = false
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0 ..< count, id: \.self) { i in
+                Capsule().fill(color)
+                    .frame(width: 2.5, height: barHeight)
+                    .scaleEffect(y: (up || reduceMotion) ? 1 : 0.32, anchor: .center)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.45).repeatForever(autoreverses: true)
+                        .delay(Double(i) * 0.12), value: up)
+            }
+        }
+        .accessibilityHidden(true)   // decorative meter
+        .onAppear { up = true }
+    }
+}
+
+// MARK: - Welcome
 
 private struct WelcomeScreen: View {
     @Environment(\.colorScheme) private var scheme
@@ -80,24 +221,25 @@ private struct WelcomeScreen: View {
     private var t: OnTheme { OnTheme(scheme) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScreenHeader(
-                eyebrow: "Welcome",
-                title: "Just talk. I’ll type it.",
-                lede: "A little menu-bar cat that turns your voice into text — instantly, in any app, completely on your Mac. Let’s get you set up in a minute.")
-
-            HStack(spacing: 11) {
-                featureCard(badge: { keyBadge("⌥ Space") },
-                            title: "Hold the keys", caption: "One global shortcut, anywhere.")
-                featureCard(badge: { speakBadge },
-                            title: "Speak naturally", caption: "Real-time, no spinner.")
-                featureCard(badge: { typedBadge },
-                            title: "It’s typed for you", caption: "Straight into the field.")
+        StepPage(step: .welcome,
+                 title: "Just talk. I’ll type it.",
+                 lede: "This tour teaches the real app, one action per step. Everything runs on your Mac.") {
+            Text("About five minutes. Every example is optional.").murFont(12.5).foregroundStyle(t.muted(0.62))
+        } controls: {
+            EmptyView()
+        } stage: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 11) {
+                    featureCard(badge: "right ⌘", title: "Tap right ⌘", caption: "Start dictating in any app.")
+                    featureCard(badge: "Fast · Hybrid · Accurate", title: "Pick a mode", caption: "Live text, or more accurate text after you stop.")
+                    featureCard(badge: "⏎ / Esc", title: "Insert or cancel", caption: "Return types the text, Escape throws it away.")
+                }
+                consentToggle
             }
-            .padding(.top, 22)
-
-            modelsNote.padding(.top, 16)
-            consentToggle.padding(.top, 12)
+        } status: {
+            EmptyView()
+        } action: {
+            EmptyView()
         }
     }
 
@@ -118,166 +260,88 @@ private struct WelcomeScreen: View {
         .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(t.line(0.08), lineWidth: 1))
     }
 
-    private func featureCard<Badge: View>(@ViewBuilder badge: () -> Badge,
-                                           title: LocalizedStringKey, caption: LocalizedStringKey) -> some View {
+    private func featureCard(badge: String, title: LocalizedStringKey, caption: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            badge()
-            Text(title).murFont(13.5, weight: .semibold).foregroundStyle(t.ink).padding(.top, 11)
-            Text(caption).murFont(12).lineSpacing(2).foregroundStyle(t.muted(0.58)).padding(.top, 4)
-                .lineLimit(2, reservesSpace: true)   // reserve 2 lines so all 3 cards match height
+            Text(verbatim: badge).font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                .foregroundStyle(t.ink).lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.horizontal, 9).frame(height: 26)
+                .background(t.line(0.05), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .accessibilityHidden(true)
+            Text(title).murFont(13.5, weight: .semibold).foregroundStyle(t.ink).padding(.top, 10)
+            Text(caption).murFont(12).lineSpacing(2).foregroundStyle(t.muted(0.6)).padding(.top, 4)
+                .lineLimit(2, reservesSpace: true)
         }
-        .padding(.init(top: 15, leading: 14, bottom: 15, trailing: 14))
+        .padding(.init(top: 13, leading: 13, bottom: 13, trailing: 13))
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(t.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
     }
-
-    private func keyBadge(_ s: String) -> some View {
-        Text(verbatim: s).font(.system(size: 13, weight: .semibold, design: .monospaced)).foregroundStyle(t.ink)
-            .padding(.horizontal, 11).frame(height: 30)
-            .background(t.line(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
-            .accessibilityHidden(true)   // illustrative chip; the card title/caption carry meaning
-    }
-
-    private var speakBadge: some View {
-        HStack(spacing: 7) {
-            Circle().fill(Mur.accent).frame(width: 7, height: 7)
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(0 ..< 3, id: \.self) { _ in
-                    Capsule().fill(Mur.accent).frame(width: 2.5, height: 13)
-                }
-            }
-        }
-        .padding(.horizontal, 11).frame(height: 30)
-        .background(Mur.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Mur.accent.opacity(0.2), lineWidth: 1))
-        .accessibilityHidden(true)   // illustrative chip; the card title/caption carry meaning
-    }
-
-    private var typedBadge: some View {
-        HStack(spacing: 1) {
-            Text("text appears").font(.system(size: 13)).foregroundStyle(t.ink)
-            Rectangle().fill(Mur.accent).frame(width: 1.5, height: 14)
-        }
-        .padding(.horizontal, 11).frame(height: 30)
-        .background(t.line(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
-        .accessibilityHidden(true)   // illustrative chip; the card title/caption carry meaning
-    }
-
-    /// Size pulled from `OnboardingFlow`.
-    private var modelsNote: some View {
-        let gb = String(format: "%.1f GB", OnboardingFlow.totalGB)
-        let body = Text("Two models, one trick. ").fontWeight(.bold).foregroundColor(t.ink)
-            + Text("A fast model types an instant draft while you speak. When you release, an accurate model rewrites the whole utterance. Setup installs both — about ")
-            + Text(verbatim: gb).fontWeight(.bold).foregroundColor(t.ink)
-            + Text(". Nothing you say ever leaves your Mac.")
-        return HStack(alignment: .top, spacing: 11) {
-            onboardingCat(30).padding(.top, 1).accessibilityHidden(true)   // decorative
-            body.font(.system(size: 13)).lineSpacing(3).foregroundColor(t.muted(0.72))
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.init(top: 14, leading: 16, bottom: 14, trailing: 16))
-        .background(Mur.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(Mur.accent.opacity(0.18), lineWidth: 1))
-    }
 }
 
-// MARK: - Step 5: Done (full)
+// MARK: - Done
 
 private struct DoneScreen: View {
     @Bindable var model: OnboardingModel
     @Environment(\.colorScheme) private var scheme
 
     private var t: OnTheme { OnTheme(scheme) }
+    private var everyday: DictationMode { model.everyday ?? ModelSetting.current }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScreenHeader(
-                eyebrow: "All set",
-                title: "You’re ready to talk",
-                lede: "Murmator is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.")
-
-            VStack(spacing: 9) {
-                checkRow(title: "Two voice models installed",
-                         trailing: { (Text(verbatim: String(format: "%.1f GB · ", OnboardingFlow.totalGB)) + Text("on-device"))
-                             .font(.system(size: 12.5)).foregroundStyle(t.muted(0.5)) })
-                permissionRow
-                checkRow(title: "Shortcut set to",
-                         trailing: { keyChips(model.shortcutLabel) })
+        StepPage(step: .done,
+                 title: "Ready to dictate",
+                 lede: "Pick the mode for everyday dictation. Everything here can be changed later from the menu bar.") {
+            Text("Translation stays off for everyday dictation unless you turn it on.")
+                .murFont(12.5).foregroundStyle(t.muted(0.62))
+        } controls: {
+            Text("Everyday mode").murFont(13, weight: .semibold).foregroundStyle(t.ink)
+            Picker("Everyday mode", selection: Binding(get: { everyday }, set: { model.everyday = $0 })) {
+                Text("Fast").tag(DictationMode.fast)
+                Text("Hybrid").tag(DictationMode.hybrid)
+                Text("Accurate").tag(DictationMode.accurate)
             }
-            .padding(.top, 22)
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            Text(modeNote).murFont(12).foregroundStyle(t.muted(0.66)).lineLimit(1)
+        } stage: {
+            VStack(spacing: 0) {
+                row("Microphone", model.microphoneName)
+                row("Shortcut", String(localized: "Tap right ⌘ to dictate at the caret · hold it to talk, release to insert"))
+                row("Corrector", model.correctorEnabled
+                    ? String(localized: "On for all dictation — Settings › Models")
+                    : String(localized: "Off — Settings › Models"))
+                row("Translation", String(localized: "Off for everyday dictation — menu bar › Translate to"))
+                row("This tour", String(localized: "Menu bar icon › Setup tour…"), last: true)
+            }
+            .padding(.horizontal, 16)
+            .background(t.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
+        } status: {
+            if !model.flow.accessibilityGranted {
+                StatusLine(text: String(localized: "Typing into other apps needs Accessibility — grant it from the menu later."), tone: .working)
+            } else {
+                StatusLine(text: String(localized: "Microphone and Accessibility are allowed."), tone: .ok)
+            }
+        } action: {
+            EmptyView()
         }
     }
 
-    /// Honest permission row: a green check when Accessibility is granted, an amber
-    /// "typing off" notice when it was skipped (Accessibility is optional — HUD-only
-    /// dictation still works; the user can grant it later from the menu).
-    @ViewBuilder private var permissionRow: some View {
-        if model.flow.accessibilityGranted {
-            checkRow(title: "Microphone & Accessibility granted", trailing: { EmptyView() })
-        } else {
-            row(badge: noticeBadge, title: "Typing into other apps is off — grant Accessibility later from the menu",
-                tint: amber, trailing: { EmptyView() })
+    private var modeNote: LocalizedStringKey {
+        switch everyday {
+        case .fast: return "Text while you speak; least accurate."
+        case .hybrid: return "Live draft, then an accurate result."
+        case .accurate: return "Text after you finish; no live draft."
         }
     }
 
-    private func checkRow<Trailing: View>(title: LocalizedStringKey,
-                                           @ViewBuilder trailing: () -> Trailing) -> some View {
-        row(badge: checkBadge, title: title, tint: t.ink, trailing: trailing)
-    }
-
-    private func row<Badge: View, Trailing: View>(badge: Badge, title: LocalizedStringKey, tint: Color,
-                                                   @ViewBuilder trailing: () -> Trailing) -> some View {
+    private func row(_ key: LocalizedStringKey, _ value: String, last: Bool = false) -> some View {
         HStack(spacing: 12) {
-            badge
-            Text(title).murFont(14, weight: .medium).foregroundStyle(tint)
-            Spacer(minLength: 6)
-            trailing()
+            Text(key).murFont(12.5, weight: .semibold).foregroundStyle(t.muted(0.7))
+                .frame(width: 104, alignment: .leading)
+            Text(verbatim: value).murFont(13).foregroundStyle(t.ink).lineLimit(2)
+            Spacer(minLength: 0)
         }
-        .padding(.init(top: 13, leading: 15, bottom: 13, trailing: 15))
-        .background(t.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
-    }
-
-    private var amber: Color { OnTheme.rgb(244, 191, 79) }
-
-    private var checkBadge: some View {
-        Circle().fill(OnTheme.rgb(95, 179, 106)).frame(width: 22, height: 22)
-            .overlay(Text("✓").font(.system(size: 12, weight: .bold)).foregroundStyle(.white))
-            .accessibilityHidden(true)   // decorative; the row title carries the meaning
-    }
-
-    /// Amber "!" badge for the skipped-Accessibility (typing-off) notice.
-    private var noticeBadge: some View {
-        Circle().fill(amber).frame(width: 22, height: 22)
-            .overlay(Text(verbatim: "!").font(.system(size: 13, weight: .bold)).foregroundStyle(OnTheme.rgb(26, 18, 12)))
-            .accessibilityHidden(true)   // decorative; the row title carries the meaning
-    }
-
-    private func keyChips(_ label: String) -> some View {
-        HStack(spacing: 5) {
-            ForEach(splitShortcut(label), id: \.self) { key in
-                Text(verbatim: key).font(.system(size: 12, weight: .semibold, design: .monospaced)).foregroundStyle(t.ink)
-                    .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24)
-                    .background(t.line(0.05), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(t.line(0.14), lineWidth: 1))
-            }
-        }
-    }
-
-    /// Split a shortcut label ("⌃⌥Space") into chip tokens. KeyboardShortcuts
-    /// renders modifiers glyph-adjacent; break before the trailing key name.
-    private func splitShortcut(_ s: String) -> [String] {
-        let mods = Set("⌃⌥⇧⌘")
-        var out: [String] = []
-        var key = ""
-        for ch in s where ch != " " {
-            if mods.contains(ch) { out.append(String(ch)) } else { key.append(ch) }
-        }
-        if !key.isEmpty { out.append(key) }
-        return out.isEmpty ? [s] : out
+        .frame(height: 40)
+        .overlay(alignment: .bottom) { if !last { Rectangle().fill(t.line(0.07)).frame(height: 1) } }
     }
 }
-

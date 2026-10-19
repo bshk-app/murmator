@@ -5,13 +5,8 @@ import XCTest
 /// Model-backed tests are skipped when the models are absent, so a checkout
 /// without the ~1 GB download still passes. The routing tests never need them.
 final class TranslatorTests: XCTestCase {
-    private var modelsRoot: URL? {
-        let root = URL(fileURLWithPath: "/Volumes/DATA/bergamot-arm64/models")
-        return FileManager.default.fileExists(atPath: root.path) ? root : nil
-    }
-
     private func translator(_ pair: LanguagePair) throws -> Translator? {
-        guard let modelsRoot else { return nil }
+        guard let modelsRoot = bergamotModels else { return nil }
         do {
             return try Translator(pair: pair, modelsRoot: modelsRoot)
         } catch Translator.Failure.modelUnavailable {
@@ -50,9 +45,11 @@ final class TranslatorTests: XCTestCase {
         XCTAssertThrowsError(
             try Translator(pair: pair, modelsRoot: URL(fileURLWithPath: "/nonexistent"))
         ) { error in
-            guard case Translator.Failure.modelUnavailable = error else {
+            guard case let Translator.Failure.modelUnavailable(reported, path) = error else {
                 return XCTFail("expected modelUnavailable, got \(error)")
             }
+            XCTAssertEqual(reported, pair)
+            XCTAssertEqual(path, "/nonexistent/\(pair.modelDirectoryName)")
         }
     }
 

@@ -40,6 +40,7 @@ note "== validate release JSON =="
 jq -e . "$ROOT/release-please-config.json" >/dev/null
 jq -e . "$ROOT/.release-please-manifest.json" >/dev/null
 jq -e . "$ROOT/Distribution/cask-murmur.json" >/dev/null
+jq -e '.pins | length > 0' "$ROOT/.package.resolved" >/dev/null
 
 version="$(read_version)"
 manifest_version="$(jq -r '.["."]' "$ROOT/.release-please-manifest.json")"

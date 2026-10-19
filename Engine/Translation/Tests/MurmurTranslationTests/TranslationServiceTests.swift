@@ -6,7 +6,7 @@ import XCTest
 /// Model-backed cases skip without the weights; routing and gating never need
 /// them.
 final class TranslationServiceTests: XCTestCase {
-    private let modelsRoot = URL(fileURLWithPath: "/Volumes/DATA/bergamot-arm64/models")
+    private let modelsRoot = bergamotModels ?? FileManager.default.temporaryDirectory
 
     private func service(residentLimit: Int = 2) throws -> TranslationService {
         guard FileManager.default.fileExists(
@@ -17,13 +17,8 @@ final class TranslationServiceTests: XCTestCase {
 
     // MARK: routing
 
-    func test_bundled_direct_quality_route_does_not_change_fast_pivot() async throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let dir = root.appendingPathComponent("ct2-rufi")
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        try Data().write(to: dir.appendingPathComponent("model.bin"))
-        let service = TranslationService(modelsRoot: modelsRoot, qualityModelsRoots: [root])
+    func test_direct_quality_route_does_not_change_fast_pivot() {
+        let service = TranslationService(modelsRoot: modelsRoot)
         XCTAssertEqual(service.qualityRoute(from: "ru", to: "fi"), .direct(.init(source: "ru", target: "fi")))
         XCTAssertEqual(service.route(from: "ru", to: "fi"), .pivot(.init(source: "ru", target: "en"), .init(source: "en", target: "fi")))
         XCTAssertNil(service.qualityRoute(from: "ru", to: "ru"))
@@ -126,17 +121,20 @@ final class TranslationServiceTests: XCTestCase {
         XCTAssertEqual(Set(resident.map(\.description)), ["fi-en", "en-de"])
     }
 
-    func test_a_failing_leg_is_named_and_stops_the_route() async throws {
-        // en-xx does not exist, so the second leg of ru -> xx cannot load. The
-        // failure must name that leg rather than the route as a whole.
-        let service = TranslationService(modelsRoot: modelsRoot)
+    func test_a_leg_that_cannot_load_is_named() async throws {
+        // Nothing is installed, so the first leg of fi -> en -> de cannot load.
+        // The failure must name that leg rather than the route as a whole.
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = TranslationService(modelsRoot: root)
         do {
-            _ = try await service.translate("привет", from: "ru", to: "zz")
+            _ = try await service.translate("Hei", from: "fi", to: "de")
             XCTFail("expected a failure")
-        } catch let error as TranslationService.Unsupported {
-            XCTAssertEqual(error.target, "zz")  // rejected before any load
+        } catch let error as TranslationService.Failure {
+            XCTAssertEqual(error.leg, LanguagePair(source: "fi", target: "en"))
         } catch {
-            XCTFail("expected Unsupported, got \(error)")
+            XCTFail("expected Failure, got \(error)")
         }
     }
 

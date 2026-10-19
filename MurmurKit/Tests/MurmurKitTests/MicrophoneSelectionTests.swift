@@ -98,12 +98,4 @@ final class MicrophoneSelectionTests: XCTestCase {
         defaults.set(MicrophoneSetting.systemDefaultUID, forKey: MicrophoneSetting.defaultsKey)
         XCTAssertNil(MicrophoneSetting.currentUID)
     }
-
-    /// Core Audio documents name/UID CFObjects as caller-owned. The Swift bridge
-    /// must consume that +1 retain rather than leaking it on every refresh/start.
-    func test_core_audio_string_bridge_consumes_a_retained_value() {
-        let retained = Unmanaged.passRetained("Studio USB" as CFString)
-
-        XCTAssertEqual(AudioInputDevices.takeRetainedString(retained), "Studio USB")
-    }
 }

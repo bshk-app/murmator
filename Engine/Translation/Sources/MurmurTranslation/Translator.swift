@@ -16,9 +16,11 @@ import MurmurMT
 /// Not `Sendable`: one instance owns one loaded model and one non-reentrant
 /// C++ service. `TranslationService` owns the serialisation.
 public final class Translator: TextTranslating {
-    public enum Failure: Error, CustomStringConvertible {
+    public enum Failure: Error, CustomStringConvertible, LocalizedError {
         case modelUnavailable(pair: LanguagePair, path: String)
         case engine(String)
+
+        public var errorDescription: String? { description }
 
         public var description: String {
             switch self {

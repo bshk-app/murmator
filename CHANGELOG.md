@@ -11,6 +11,48 @@ release-please drafts each section from conventional commits and opens a release
 PR. Rewrite those generated lines in the PR into concise prose a person should
 read in an update panel before merging it.
 
+## [0.7.0] - 2026-10-19
+
+### Added
+
+- Bring your own cloud providers for recognition, correction and translation.
+  Choose a separate provider and model for each step, or keep it on this Mac.
+  Connections include OpenAI, ChatGPT plan sign-in, Anthropic, Dictator,
+  Deepgram, OpenRouter, Featherless and OpenAI-compatible servers. Available
+  operations depend on the connection and model; no paid model is chosen for you.
+- Search large model catalogs instead of scrolling through long menus.
+- Set reasoning effort for a correction or translation model. OpenRouter can
+  prefer low latency or a particular server, with an explicit fallback choice.
+- Keep quick controls in the menu bar and use a separate window that stays open
+  when you switch apps. Settings now has separate Models and Providers pages.
+- Learn microphone selection, recognition modes, correction, translation and
+  dictation at the caret through a step-by-step setup tour.
+
+### Changed
+
+- The optional corrector receives the finished text, including sentence context.
+  Invalid model output keeps the original text. Long recordings are processed
+  in bounded sections with neighbouring context.
+- Press Return again while finishing to skip optional correction and insert the
+  final recognized text. Recognition still finishes before anything is inserted.
+- The mascot advises during errors or a long wait; ordinary dictation keeps its
+  compact indicator and live draft.
+
+### Fixed
+
+- Fixed a crash after inserting dictated text when diagnostic stderr was no
+  longer writable. Request diagnostics use system logging without transcript
+  contents or API keys.
+- Live recognition receives retained speech at the start of a phrase, keeping
+  words that precede speech detection.
+- Changing a connection during a recording keeps its original endpoint and key
+  together. New settings apply to the next recording.
+- Corrected model-list counts, stale search results and connection-check status.
+
+Cloud correction quality depends on the selected model. This release does not
+claim that a model benchmark or catalog entry guarantees correct recognition,
+correction, account access or a particular response time.
+
 ## [0.6.0](https://github.com/bshk-app/murmur/compare/murmur-v0.5.0...murmur-v0.6.0) (2026-10-11)
 
 Murmur is now called **Murmator**, with a new icon and a choice of mascots.

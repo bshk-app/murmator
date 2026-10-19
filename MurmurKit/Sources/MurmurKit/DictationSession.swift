@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// The UI-agnostic dictation pipeline shared by the menu-bar app and the CLI:
 /// load and warm the models, capture the mic in 96 ms chunks, stream the live
@@ -79,7 +80,7 @@ public final class DictationSession: @unchecked Sendable {
         let captured = mic.stop()
         capturedSeconds = captured.durationS
         capturedPeak = captured.peakRMS
-        let final = engine.finish()
+        let final = engine.finish(capturedPeakRMS: captured.peakRMS)
         mic = MicCapture()
         // The recording is a diagnostic, not part of the transcript: writing it
         // here would put a megabyte of disk I/O between the user's stop gesture
@@ -120,9 +121,9 @@ public final class DictationSession: @unchecked Sendable {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
                                                     withIntermediateDirectories: true)
             try DiagnosticWAV.write(samples: samples, to: url)
-            FileHandle.standardError.write(Data("Recorded diagnostic audio: \(url.path)\n".utf8))
+            Logger(subsystem: "app.bshk.murmur", category: "diagnostic-audio").info("Diagnostic audio saved")
         } catch {
-            FileHandle.standardError.write(Data("Diagnostic audio failed: \(error)\n".utf8))
+            Logger(subsystem: "app.bshk.murmur", category: "diagnostic-audio").error("Diagnostic audio failed: domain=\((error as NSError).domain, privacy: .public) code=\((error as NSError).code)")
         }
     }
 

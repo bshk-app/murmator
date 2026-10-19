@@ -1,0 +1,13 @@
+--- shortlist.cpp
++++ shortlist.cpp
+@@ -147,7 +147,9 @@
+   bool failFlag = 0;
+   // The offset table has to be within the size of shortlists.
+   for(int i = 0; i < wordToOffsetSize_-1; i++)
+-    failFlag |= wordToOffset_[i] >= shortListsSize_;
++    // Empty rows may start at the end sentinel. Their [begin, end) range
++    // contains no indices; only offsets beyond the array are invalid.
++    failFlag |= wordToOffset_[i] > shortListsSize_;
+ 
+   // The last element of wordToOffset_ must equal shortListsSize_
+   failFlag |= wordToOffset_[wordToOffsetSize_-1] != shortListsSize_;

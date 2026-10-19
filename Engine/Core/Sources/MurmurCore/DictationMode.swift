@@ -49,6 +49,16 @@ extension DictationMode {
         }
     }
 
+    /// Longest a live epoch may run without a pause before it is cut.
+    ///
+    /// In continuous speech the cut lands inside a word. Hybrid and Accurate
+    /// re-transcribe each cut phrase with the batch model, so the Core ML batch
+    /// path can afford short phrases. Fast has no batch pass to repair the word,
+    /// so it takes the longest bound the live lane already runs with.
+    public func maxEpochSeconds(batchUsesGPU: Bool) -> Double {
+        self == .fast || batchUsesGPU ? 28 : 4
+    }
+
     /// Modes worth offering for `language`; the picker should not show a choice
     /// that silently becomes another one.
     public static func available(for language: String?) -> [DictationMode] {

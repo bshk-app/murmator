@@ -63,7 +63,9 @@ final class STTEngine: @unchecked Sendable {
         languageCodes = codes
         languageCodesLock.unlock()
         queue.sync {
-            if let warm = engine.makeSession(for: mode, language: nil) {
+            // Synthetic silence still has to run the batch model to compile its
+            // kernels. Normal utterances enable trimming only after warm-up.
+            if let warm = engine.makeSession(for: mode, language: nil, trimBatch: false) {
                 _ = warm.step([Float](repeating: 0, count: 16000))
                 _ = warm.finishText()
             }
@@ -98,9 +100,9 @@ final class STTEngine: @unchecked Sendable {
     }
 
     /// Flush and end the utterance; returns the batch-final transcript.
-    func finish() -> String {
+    func finish(capturedPeakRMS: Float? = nil) -> String {
         queue.sync {
-            let text = session?.finishText() ?? ""
+            let text = session?.finishText(peakRMS: capturedPeakRMS) ?? ""
             session = nil
             return text
         }

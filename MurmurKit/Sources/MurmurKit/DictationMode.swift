@@ -7,12 +7,14 @@ protocol UtteranceSession {
     func step(_ samples: [Float]) -> (confirmed: String, partial: String)
     var currentText: (confirmed: String, partial: String) { get }
     func finishText() -> String
+    func finishText(peakRMS: Float?) -> String
     /// Stop the live lane; later `step`s must still keep the final audio.
     func releaseLive()
 }
 
 extension UtteranceSession {
     func releaseLive() {}
+    func finishText(peakRMS: Float?) -> String { finishText() }
 }
 
 /// Fast lane only (Nemotron). Its accumulated text is the confirmed output; there

@@ -19,6 +19,8 @@ public extension TextTranslationEngine {
 @MainActor @Observable public final class TextTranslationModel {
     public enum Phase { case idle, preparing, translating, cancelling }
     public static let characterLimit = 10_000
+    public let maximumCharacters: Int
+    public var inputCharacters: Int { input.unicodeScalars.count }
     public var input = "" { didSet { if oldValue != input { invalidate() } } }
     public private(set) var source: String
     public private(set) var target: String
@@ -34,7 +36,8 @@ public extension TextTranslationEngine {
     @ObservationIgnored private var generation = UUID()
 
     public init(engine: any TextTranslationEngine, source: String, target: String,
-                availableTargets: @escaping @MainActor (String) -> [String]) {
+                availableTargets: @escaping @MainActor (String) -> [String], maximumCharacters: Int = characterLimit) {
+        self.maximumCharacters = maximumCharacters
         self.engine = engine; self.source = source; self.targets = availableTargets
         let options = availableTargets(source)
         self.target = options.contains(target) ? target : options.first ?? target
@@ -47,7 +50,7 @@ public extension TextTranslationEngine {
     private func validateQuality() { if !availableQualities.contains(quality) { quality = .quality } }
     public var isBusy: Bool { phase != .idle }
     public var availableTargets: [String] { targets(source) }
-    public var canTranslate: Bool { !isBusy && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && input.count <= Self.characterLimit && availableTargets.contains(target) }
+    public var canTranslate: Bool { !isBusy && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && inputCharacters <= maximumCharacters && availableTargets.contains(target) }
     public var canSwap: Bool { !isBusy && targets(target).contains(source) }
     public func setSource(_ value: String) {
         guard !isBusy, value != source else { return }

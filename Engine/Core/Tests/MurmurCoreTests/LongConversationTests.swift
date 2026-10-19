@@ -26,8 +26,6 @@ final class LongConversationTests: XCTestCase {
         let saved = try await NoteRepository(directory: directory).all()
         XCTAssertEqual(saved.count, 1)
         XCTAssertEqual(saved.first?.text, (1...240).map { "Meeting phrase \($0)." }.joined(separator: " "))
-        XCTAssertTrue(saved.first?.text.hasPrefix("Meeting phrase 1.") == true)
-        XCTAssertTrue(saved.first?.text.hasSuffix("Meeting phrase 240.") == true)
     }
     func testReadingBlocksKeepEveryCharacterAndHaveBoundedLayouts() {
         let text = "Начало собрания.\n\n" + String(repeating: "Hyvää iltaa! Puhutaan koulusta, ystävistä ja läksyistä. 👨‍👩‍👧‍👦\n", count: 900) + "\nКонец собрания."

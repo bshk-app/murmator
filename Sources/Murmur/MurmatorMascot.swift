@@ -2,11 +2,12 @@ import Foundation
 import SwiftUI
 
 enum MascotMood: Equatable {
-    case idle, listening, transcribing, success, error
+    case idle, preparing, listening, transcribing, success, error
 
     var animation: (row: Int, count: Int, interval: TimeInterval, repeats: Bool) {
         switch self {
         case .idle: return (0, 6, 0.18, true)
+        case .preparing: return (7, 6, 0.12, true)
         case .listening: return (6, 6, 0.17, true)
         case .transcribing: return (7, 6, 0.14, true)
         case .success: return (4, 5, 0.17, false)
@@ -60,7 +61,7 @@ struct MurmatorMascot: View {
                         .renderingMode(.original)
                         .resizable()
                         .interpolation(.high)
-                        .frame(width: width * 8, height: size * 11)
+                        .frame(width: width * 8, height: size * 11, alignment: .topLeading)
                         .offset(x: -CGFloat(column) * width, y: -CGFloat(animation.row) * size)
                         .frame(width: width, height: size, alignment: .topLeading)
                         .clipped()
@@ -69,6 +70,9 @@ struct MurmatorMascot: View {
                         .frame(width: size, height: size)
                 }
             }
+            // Sprite offsets are discrete poses. Inherited spring/repeating
+            // animations from onboarding must never animate between sheet cells.
+            .transaction { $0.animation = nil }
             .task(id: reduceMotion) {
                 start = .now
                 finished = false
@@ -88,6 +92,7 @@ private extension MascotMood {
     var expression: MascotExpression {
         switch self {
         case .idle: .happy
+        case .preparing: .thinking
         case .listening: .listening
         case .transcribing: .thinking
         case .success: .celebrating

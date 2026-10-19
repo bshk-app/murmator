@@ -33,10 +33,15 @@ jobs:
 
       # Debug, not Release: this gate answers "does it still compile", and the
       # optimizer pass costs minutes that release.yml already pays once.
+      # A fresh runner cannot approve the pinned MLX build plugins or macros
+      # interactively. Trust that committed graph, as the release workflow does.
       - name: Build the app without signing
         run: |
           tuist generate --no-open
           xcodebuild \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            -onlyUsePackageVersionsFromResolvedFile \
             -workspace Murmur.xcworkspace \
             -scheme Murmur \
             -configuration Debug \

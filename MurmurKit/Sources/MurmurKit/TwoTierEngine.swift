@@ -48,8 +48,8 @@ public final class TwoTierEngine {
     public func prepare(_ mode: DictationMode) async throws {
         switch mode {
         case .fast:     _ = try await loadNemotron()
-        case .accurate: _ = try await loadParakeet()
-        case .hybrid:   _ = try await loadNemotron(); _ = try await loadParakeet()
+        case .accurate: _ = try await loadParakeet(); _ = try await loadVAD()
+        case .hybrid:   _ = try await loadNemotron(); _ = try await loadParakeet(); _ = try await loadVAD()
         }
     }
 
@@ -68,8 +68,8 @@ public final class TwoTierEngine {
     public func isReady(_ mode: DictationMode) -> Bool {
         switch mode {
         case .fast:     return nemotronModel.cached != nil
-        case .accurate: return parakeetModel.cached != nil
-        case .hybrid:   return nemotronModel.cached != nil && parakeetModel.cached != nil
+        case .accurate: return parakeetModel.cached != nil && vadModel.cached != nil
+        case .hybrid:   return nemotronModel.cached != nil && parakeetModel.cached != nil && vadModel.cached != nil
         }
     }
 
@@ -130,25 +130,28 @@ public final class TwoTierEngine {
         }
     }
 
-    func makeSession(for mode: DictationMode, language: String? = nil) -> UtteranceSession? {
+    func makeSession(for mode: DictationMode, language: String? = nil, trimBatch: Bool = true) -> UtteranceSession? {
         switch mode {
-        case .hybrid:   return makeHybridSession(language: language)
+        case .hybrid:   return makeHybridSession(language: language, trimBatch: trimBatch)
         case .fast:     return makeFastSession(language: language)
-        case .accurate: return makeAccurateSession()
+        case .accurate: return makeAccurateSession(trimBatch: trimBatch)
         }
     }
 
-    /// Live Nemotron draft; pasted text is a Parakeet batch of the whole utterance.
+    /// Live Nemotron draft; pasted text is one Parakeet batch with silent ends removed.
     func makeHybridSession(language: String? = nil,
-                           fastChunkMs: Int = defaultFastChunkMs) -> TwoPassSession? {
+                           fastChunkMs: Int = defaultFastChunkMs,
+                           trimBatch: Bool = true) -> TwoPassSession? {
         guard let nemotron = nemotronModel.cached,
-              let parakeet = parakeetModel.cached else { return nil }
+              let parakeet = parakeetModel.cached,
+              !trimBatch || vadModel.cached != nil else { return nil }
         let live = nemotron.makeStreamSession(language: language, chunkMs: fastChunkMs)
         return TwoPassSession(
             liveStep: { _ = live.step($0) },
             liveText: { live.text },
             liveFinish: { _ = live.finish() },
-            batch: { Self.parakeetBatch(parakeet, $0) }
+            batch: { Self.parakeetBatch(parakeet, $0) },
+            batchInput: trimBatch ? { self.batchInput($0, peakRMS: $1) } : { audio, _ in audio }
         )
     }
 
@@ -158,14 +161,21 @@ public final class TwoTierEngine {
     }
 
     /// No live draft — the buffer is decoded once at release.
-    func makeAccurateSession() -> TwoPassSession? {
-        guard let parakeet = parakeetModel.cached else { return nil }
+    func makeAccurateSession(trimBatch: Bool = true) -> TwoPassSession? {
+        guard let parakeet = parakeetModel.cached,
+              !trimBatch || vadModel.cached != nil else { return nil }
         return TwoPassSession(
             liveStep: { _ in },
             liveText: { "" },
             liveFinish: {},
-            batch: { Self.parakeetBatch(parakeet, $0) }
+            batch: { Self.parakeetBatch(parakeet, $0) },
+            batchInput: trimBatch ? { self.batchInput($0, peakRMS: $1) } : { audio, _ in audio }
         )
+    }
+
+    private func batchInput(_ audio: [Float], peakRMS: Float?) -> [Float] {
+        guard let vad = vadModel.cached else { return audio }
+        return BatchAudioTrim.samples(audio, peakRMS: peakRMS, detector: vad)
     }
 
     /// Captions: bounded Nemotron epochs corrected by Parakeet batches, with

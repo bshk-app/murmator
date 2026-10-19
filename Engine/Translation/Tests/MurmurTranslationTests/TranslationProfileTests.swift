@@ -66,9 +66,9 @@ final class TranslationProfileTests: XCTestCase {
         XCTAssertThrowsError(try TranslationProfileCatalog(version: "x", bindings: bindings, qualifiedProfiles: [disconnected]))
     }
 
+    /// The incomplete pivot (fi-en + en-ru offers no fi -> ru) is covered by
+    /// `PreparationAndLanguageTests` in MurmurCore.
     func testOfflineAvailabilityRequiresSelectedModelsNotAnyPossiblePivot() {
-        let routes = OfflineTranslationRoutes(pairs: [.init(source: "fi", target: "en"), .init(source: "en", target: "ru")])
-        XCTAssertEqual(routes.targets(from: "fi"), ["en"])
         let complete = OfflineTranslationRoutes(pairs: [.init(source: "fi", target: "ru")])
         XCTAssertEqual(complete.targets(from: "fi"), ["ru"])
     }

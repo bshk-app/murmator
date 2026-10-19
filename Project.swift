@@ -36,6 +36,8 @@ let project = Project(
     name: "Murmur",
     packages: [
         .local(path: "MurmurKit"),
+        .local(path: "Engine/Cloud"),
+        .remote(url: "https://github.com/bshk-app/ai-providers-swift.git", requirement: .upToNextMinor(from: "0.3.1")),
         .remote(url: "https://github.com/sindresorhus/KeyboardShortcuts",
                 requirement: .upToNextMajor(from: "2.0.0")),
         .remote(url: "https://github.com/PostHog/posthog-ios",
@@ -61,7 +63,7 @@ let project = Project(
                 "CFBundleLocalizations": ["en", "ru"],
                 "CFBundleDevelopmentRegion": "en",
                 "NSMicrophoneUsageDescription":
-                    "Murmator transcribes your speech on-device while you hold the dictation hotkey.",
+                    "Murmator records speech for dictation. Audio is sent to the cloud only when you choose a cloud speech provider.",
                 // Analytics key injected from MURMUR_POSTHOG_KEY (empty in source/fork builds → off).
                 "PostHogAPIKey": .string(posthogAPIKey),
                 // Sparkle in-app updates: the appcast lives in the app's own GitHub repo
@@ -73,10 +75,13 @@ let project = Project(
                 "SUEnableAutomaticChecks": true,
                 "SUScheduledCheckInterval": 86400,   // daily
             ]),
-            sources: ["Sources/Murmur/**/*.swift", "Shared/Mascot/**/*.swift"],
+            sources: ["Sources/Murmur/**/*.swift", "Shared/Mascot/**/*.swift", "Shared/Cloud/**/*.swift"],
             resources: ["Sources/Murmur/Resources/**", "Shared/Mascot/Resources/**"],
             dependencies: [
                 .package(product: "MurmurKit"),
+                .package(product: "MurmurCloud"),
+                .package(product: "AIProvidersAuth"),
+                .package(product: "AIProviderViews"),
                 .package(product: "KeyboardShortcuts"),
                 .package(product: "PostHog"),
                 .package(product: "Sparkle"),

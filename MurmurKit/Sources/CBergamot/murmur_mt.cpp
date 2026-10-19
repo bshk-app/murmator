@@ -4,9 +4,11 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
+#include "common/logging.h"
 #include "spdlog/spdlog.h"
 #include "translator/parser.h"
 #include "translator/response.h"
@@ -47,6 +49,12 @@ MurmurMTEngine *murmur_mt_open(const char *config_path, char **error_out) {
     return nullptr;
   }
   try {
+    // Marian defaults to aborting the process on model/config errors. Keep
+    // those failures inside this C boundary, including lazy graph creation.
+    // The switch is process-global: write it once before any engine is used.
+    static std::once_flag exceptionMode;
+    std::call_once(exceptionMode, [] { marian::setThrowExceptionOnAbort(true); });
+
     // marian registers process-global spdlog loggers named "general" and
     // "valid" while parsing a config, and registering a name twice throws.
     // Loading a second model therefore fails - which is every pivot, since a
@@ -60,6 +68,9 @@ MurmurMTEngine *murmur_mt_open(const char *config_path, char **error_out) {
     engine->service =
         std::make_unique<marian::bergamot::BlockingService>(serviceConfig);
     auto options = marian::bergamot::parseOptionsFromFilePath(config_path);
+    // The binary loader otherwise trusts tensor lengths from the file and
+    // can read beyond a partially downloaded model before it can throw.
+    options->set("check-bytearray", true);
     engine->model =
         std::make_shared<marian::bergamot::TranslationModel>(options);
 

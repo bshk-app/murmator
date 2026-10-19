@@ -2,57 +2,46 @@ import XCTest
 @testable import MurmurKit
 
 final class OnboardingFlowTests: XCTestCase {
-    func test_steps_are_six_in_order() {
+    func test_steps_follow_the_tour_order() {
         XCTAssertEqual(OnboardingFlow.Step.allCases,
-                       [.welcome, .permissions, .shortcut, .download, .tryIt, .done])
+                       [.welcome, .microphone, .models, .fast, .hybrid, .accurate,
+                        .corrector, .translation, .caret, .done])
     }
 
-    func test_permissions_gate_requires_mic_only() {
+    func test_microphone_gate_requires_mic_access() {
         var s = OnboardingFlow.State()
-        s.step = .permissions
-        XCTAssertFalse(OnboardingFlow.canContinue(s))     // no mic
+        s.step = .microphone
+        XCTAssertFalse(OnboardingFlow.canContinue(s))
         s.micGranted = true
-        XCTAssertTrue(OnboardingFlow.canContinue(s))       // mic alone unblocks (accessibility skippable)
+        XCTAssertTrue(OnboardingFlow.canContinue(s))
     }
 
-    func test_download_gate_requires_both_models() {
+    func test_models_gate_requires_both_models() {
         var s = OnboardingFlow.State()
-        s.step = .download
+        s.step = .models
         s.fastFraction = 1; s.accurateFraction = 0.5
         XCTAssertFalse(OnboardingFlow.canContinue(s))
         s.accurateFraction = 1
         XCTAssertTrue(OnboardingFlow.canContinue(s))
     }
 
-    func test_tryit_gate_requires_a_success() {
-        var s = OnboardingFlow.State()
-        s.step = .tryIt
-        XCTAssertFalse(OnboardingFlow.canContinue(s))
-        s.didTry = true
-        XCTAssertTrue(OnboardingFlow.canContinue(s))
-    }
-
-    func test_other_steps_never_block() {
-        for step in [OnboardingFlow.Step.welcome, .shortcut, .done] {
+    func test_examples_are_optional() {
+        for step in [OnboardingFlow.Step.welcome, .fast, .hybrid, .accurate, .corrector, .translation, .caret, .done] {
             var s = OnboardingFlow.State(); s.step = step
-            XCTAssertTrue(OnboardingFlow.canContinue(s))
+            XCTAssertTrue(OnboardingFlow.canContinue(s), "\(step)")
         }
     }
 
-    func test_download_math() {
-        let m = OnboardingFlow.downloadMetrics(fast: 1.0, accurate: 0.5)
-        XCTAssertEqual(m.downloadedGB, 0.8 * 1.0 + 2.6 * 0.5, accuracy: 0.001)
-        XCTAssertEqual(m.totalGB, 3.4, accuracy: 0.001)
-        XCTAssertFalse(m.done)
-        let done = OnboardingFlow.downloadMetrics(fast: 1, accurate: 1)
-        XCTAssertTrue(done.done)
-        XCTAssertEqual(done.remainingGB, 0, accuracy: 0.001)
+    func test_only_example_steps_record() {
+        XCTAssertEqual(OnboardingFlow.Step.allCases.filter(\.isExample),
+                       [.fast, .hybrid, .accurate, .corrector, .translation, .caret])
     }
 
     func test_next_and_back_clamp() {
-        XCTAssertEqual(OnboardingFlow.next(.welcome), .permissions)
-        XCTAssertEqual(OnboardingFlow.next(.done), .done)        // clamps
-        XCTAssertEqual(OnboardingFlow.back(.permissions), .welcome)
-        XCTAssertEqual(OnboardingFlow.back(.welcome), .welcome)  // clamps
+        XCTAssertEqual(OnboardingFlow.next(.welcome), .microphone)
+        XCTAssertEqual(OnboardingFlow.next(.caret), .done)
+        XCTAssertEqual(OnboardingFlow.next(.done), .done)
+        XCTAssertEqual(OnboardingFlow.back(.microphone), .welcome)
+        XCTAssertEqual(OnboardingFlow.back(.welcome), .welcome)
     }
 }

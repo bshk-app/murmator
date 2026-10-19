@@ -136,6 +136,9 @@ struct AnimatedMascotPortrait: View {
     var hasMoustache = true
 
     private var phase: Double { reduceMotion ? 0 : max(0, elapsed) }
+    private var motion: MascotMotion {
+        MascotMotion(expression: expression, elapsed: phase, reduceMotion: reduceMotion)
+    }
     private var displayedExpression: MascotExpression {
         expression == .happy && !reduceMotion && phase.truncatingRemainder(dividingBy: 4.8) > 4.6
             ? .blinking : expression
@@ -143,7 +146,42 @@ struct AnimatedMascotPortrait: View {
 
     var body: some View {
         MascotArtwork(style: style, expression: displayedExpression, hasMoustache: hasMoustache)
-            .rotationEffect(.degrees(reduceMotion ? 0 : sin(phase * 2.5) * (expression == .celebrating ? 7 : 2)))
-            .offset(y: reduceMotion ? 0 : sin(phase * 3) * (expression == .celebrating ? 4 : 1.5))
+            .rotationEffect(.degrees(motion.rotation))
+            .scaleEffect(motion.scale, anchor: .bottom)
+            .offset(y: motion.lift)
+    }
+}
+
+/// Bounded motion keeps the cat inside its slot, even while the tour changes layout.
+struct MascotMotion {
+    let rotation: Double
+    let lift: Double
+    let scale: Double
+
+    init(expression: MascotExpression, elapsed: TimeInterval, reduceMotion: Bool) {
+        guard !reduceMotion else { rotation = 0; lift = 0; scale = 1; return }
+        let time = max(0, elapsed)
+        switch expression {
+        case .thinking:
+            rotation = sin(time * 4) * 4
+            lift = sin(time * 3) * 1.5
+            scale = 1 + sin(time * 5) * 0.015
+        case .listening:
+            rotation = sin(time * 2.4) * 2.5
+            lift = sin(time * 3.5) * 2
+            scale = 1 + sin(time * 4) * 0.025
+        case .celebrating:
+            rotation = sin(time * 5) * 7
+            lift = -abs(sin(time * 5)) * 4
+            scale = 1 + sin(time * 5) * 0.025
+        case .sad:
+            rotation = sin(time * 14) * max(0, 1 - time) * 4
+            lift = 0
+            scale = 1
+        case .happy, .blinking:
+            rotation = sin(time * 2.5) * 2
+            lift = sin(time * 3) * 1.5
+            scale = 1
+        }
     }
 }

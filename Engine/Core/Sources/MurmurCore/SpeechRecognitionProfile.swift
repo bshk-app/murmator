@@ -19,7 +19,7 @@ public struct QualifiedSpeechOverride {
 
 public struct SpeechRecognitionProfile {
     public enum PreviewBackend: String { case nemotron, whistle }
-    public enum Origin: String { case baseline, explicitChoice, qualifiedOverride, experimentalCandidate }
+    public enum Origin: String { case baseline, explicitChoice, qualifiedOverride, experimentalCandidate, cloudProvider }
     public enum ProfileError: Error { case unsupportedLanguage, unavailableRuntime }
     public let language: String
     public let mode: DictationMode
@@ -57,6 +57,11 @@ public struct SpeechRecognitionProfile {
         if language == "ru" { return .gigaam }
         if language == "ar" { return .cohereArabic }
         return SpeechModelChoice.parakeet.supports(language) ? .parakeet : .whisper
+    }
+    /// Local preview qualification must not silently disable a selected cloud
+    /// streaming backend. The baseline model remains the default local final lane.
+    public static func external(language: String, mode: DictationMode, accurateModel: SpeechModelChoice? = nil) -> Self {
+        .init(language: language, mode: mode, model: accurateModel ?? baselineModel(language: language), origin: .cloudProvider, evidenceSHA256: nil, previewBackend: .nemotron)
     }
     /// Keeps a chosen model that can recognize the language, else falls back to its baseline.
     public static func model(_ current: SpeechModelChoice, for language: String) -> SpeechModelChoice {

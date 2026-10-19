@@ -69,6 +69,30 @@ final class CaptionEngineTests: XCTestCase {
         XCTAssertEqual(corrections, 0)
     }
 
+    /// The detector can identify speech after its first consonant. Once it
+    /// opens, BOTH recognition lanes must receive the retained earlier PCM.
+    func test_delayed_vad_open_replays_pre_roll_into_live_recognition() {
+        let live = FakeLiveLane()
+        var vadFrame = 0
+        let engine = CaptionEngine(
+            live: live.make(),
+            isSpeech: { _ in vadFrame += 1; return vadFrame >= 13 },
+            batch: { _, _ in "" }
+        )
+        for marker in 1...12 {
+            engine.step([Float](repeating: Float(marker), count: 512))
+        }
+        XCTAssertEqual(live.fedSamples, 0, "Closed VAD must not transcribe the room")
+        engine.step([Float](repeating: 13, count: 512))
+        let expected = (4...13).flatMap { [Float](repeating: Float($0), count: 512) }
+        XCTAssertEqual(live.fedSamples, expected.count,
+            "Opening must recover all nine earlier frames and the current frame")
+        if live.fedSamples == expected.count {
+            XCTAssertEqual(live.chunks.flatMap { $0 }, expected,
+                "Pre-roll must retain its exact PCM values and order")
+        }
+    }
+
     private let chunk = [Float](repeating: 0, count: 1_536)  // 96 ms
 
     private func makeEngine(
@@ -85,6 +109,20 @@ final class CaptionEngineTests: XCTestCase {
             preRoll: 0.288,
             maxEpochSeconds: maxEpochSeconds
         )
+    }
+
+    /// Fast keeps the live draft as the transcript, so a cut inside a word stays
+    /// cut: a nine-second sentence once ended "мульти S." instead of "мультиязычность".
+    func test_fast_mode_keeps_a_nine_second_sentence_in_one_phrase() {
+        let live = FakeLiveLane()
+        let engine = makeEngine(live: live, speech: { _ in true }, batch: { _, _ in "" },
+                                maxEpochSeconds: DictationMode.fast.maxEpochSeconds(batchUsesGPU: false))
+
+        for _ in 0 ..< 94 { engine.step(chunk) }  // 9 s
+        engine.finish()
+
+        XCTAssertEqual(live.epochs, 1)
+        XCTAssertEqual(engine.snapshot().confirmed.count, 1)
     }
 
     /// While a phrase is open every sample reaches the live lane: its streaming
@@ -265,37 +303,20 @@ final class CaptionEngineTests: XCTestCase {
                           "the phrase dragged the pause in behind it")
     }
 
-    /// Live text resumes on a fresh epoch after a forced cap — the authoritative
-    /// batch correction stays on screen while the new provisional tail grows.
-    func test_live_draft_continues_across_a_forced_cap() {
+    /// Live text resumes on a fresh epoch after a forced cap, holding only the
+    /// speech since the cap: the confirmed batch phrase stays on screen and its
+    /// words do not appear a second time in the provisional tail.
+    func test_live_draft_restarts_after_a_forced_cap() {
         let live = FakeLiveLane()
         let engine = makeEngine(live: live, speech: { _ in true }, maxEpochSeconds: 1)
 
-        for _ in 0 ..< 12 { engine.step(chunk) }
-        let mid = engine.snapshot()
-        for _ in 0 ..< 6 { engine.step(chunk) }
-        let after = engine.snapshot()
+        for _ in 0 ..< 12 { engine.step(chunk) }   // 36 frames; the cap closes after 32
+        XCTAssertNotNil(engine.snapshot().confirmed.last)
+        for _ in 0 ..< 4 { engine.step(chunk) }    // 12 more frames
 
-        XCTAssertEqual(live.epochs, 2)
-        XCTAssertFalse(after.provisional.isEmpty, "the draft resumes after the cap")
-        XCTAssertNotEqual(after.provisional, mid.provisional)
-    }
-
-    /// Restarting the live lane means its text contains only the new phrase. The
-    /// confirmed batch phrase must not appear again in the provisional tail.
-    func test_forced_cap_does_not_render_confirmed_speech_twice() {
-        let live = FakeLiveLane()
-        let engine = makeEngine(live: live, speech: { _ in true }, maxEpochSeconds: 1)
-
-        for _ in 0 ..< 12 { engine.step(chunk) }   // trips the cap
-        let confirmed = engine.snapshot().confirmed.last?.text
-        XCTAssertNotNil(confirmed)
-
-        for _ in 0 ..< 4 { engine.step(chunk) }
-        let snapshot = engine.snapshot()
-
-        XCTAssertNotEqual(snapshot.provisional, confirmed)
-        XCTAssertFalse(snapshot.provisional.isEmpty, "the draft resumed after the cap")
+        // The fake adds a word per frame: 4 + 12 since the cap. Without the
+        // restart all 48 frames would still be in the draft.
+        XCTAssertEqual(engine.snapshot().provisional, (1 ... 16).map { "w\($0)" }.joined(separator: " "))
     }
 
     /// The mic flushes a partial chunk on stop, so the last frame is short. Those

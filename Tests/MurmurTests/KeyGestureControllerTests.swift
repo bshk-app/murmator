@@ -27,7 +27,7 @@ private final class CaptureRecorder: KeyCaptureSink {
 final class KeyGestureControllerTests: XCTestCase {
     private var saved: [String: Any?] = [:]
     private let keys = [AppMode.defaultsKey, TriggerMode.defaultsKey, RightCommandTrigger.key,
-                        DictationEnabled.key]
+                        DictationEnabled.key, "speechPostProcessingEnabled"]
 
     override func setUpWithError() throws {
         for key in keys { saved[key] = UserDefaults.standard.object(forKey: key) }
@@ -37,6 +37,7 @@ final class KeyGestureControllerTests: XCTestCase {
         UserDefaults.standard.set(TriggerMode.hold.rawValue, forKey: TriggerMode.defaultsKey)
         UserDefaults.standard.removeObject(forKey: RightCommandTrigger.key)
         UserDefaults.standard.removeObject(forKey: DictationEnabled.key)
+        UserDefaults.standard.set(false, forKey: "speechPostProcessingEnabled")
     }
 
     override func tearDownWithError() throws {
@@ -125,14 +126,44 @@ final class KeyGestureControllerTests: XCTestCase {
     /// the final text is ready. The second one would otherwise reach the chat
     /// first and send it without the dictation in it.
     func testReturnWhileFinishingSendsAfterThePaste() async {
-        let (controller, _, _) = controller()
+        let (controller, fake, _) = controller()
         controller.handle(.rightCommandTap)
         await controller.recordingTask?.value
 
         controller.handle(.confirm)
         controller.handle(.submitWhenDone)
         XCTAssertTrue(controller.submitRequested)
+        XCTAssertGreaterThan(fake.skippedPostProcessingCount, 0)
         await controller.recordingTask?.value
+    }
+
+    func testRepeatedForceSubmitPastesTheSourceAndSendsExactlyOnce() async {
+        let (controller, fake, _) = controller()
+        fake.transcript.appendSettled(.init(id: 1, startSample: 0, endSample: 16_000, text: "Final ASR text"))
+        controller.accessibilityTrusted = { true }
+        var payloads: [String] = []
+        var submitAfterRead = false
+        var settled: (@Sendable (Bool) -> Void)?
+        controller.pasteTranscript = { text, submit, callback in
+            payloads.append(text); submitAfterRead = submit; settled = callback
+            return .pasted
+        }
+        controller.handle(.rightCommandTap)
+        await controller.recordingTask?.value
+        controller.handle(.confirm)
+        controller.handle(.submitWhenDone)
+        controller.handle(.submitWhenDone)
+        await controller.recordingTask?.value
+        XCTAssertEqual(payloads, ["Final ASR text"])
+        XCTAssertTrue(submitAfterRead)
+        XCTAssertEqual(returnsPressed, 0)
+        // Simulate TextInjector: its own submit goes once the text is read,
+        // then it notifies the controller. A repeated notification cannot send.
+        if submitAfterRead { controller.pressReturn() }
+        settled?(true)
+        controller.pasteDidSettle(landed: true, generation: controller.recordingGeneration)
+        XCTAssertEqual(returnsPressed, 1)
+        XCTAssertGreaterThan(fake.skippedPostProcessingCount, 0)
     }
 
     /// The first Return lands while the microphone is still opening, so the
@@ -142,21 +173,34 @@ final class KeyGestureControllerTests: XCTestCase {
         var release: CheckedContinuation<Void, Never>?
         fake.startGate = { await withCheckedContinuation { release = $0 } }
         controller.handle(.rightCommandTap)
-        while release == nil { await Task.yield() }
+        guard let gate = await parked({ release }) else { return }
 
         controller.handle(.confirm)
         controller.handle(.submitWhenDone)
         XCTAssertTrue(controller.submitRequested)
-        release?.resume()
+        gate.resume()
         await controller.recordingTask?.value
         await controller.recordingTask?.value
         XCTAssertEqual(fake.stopCount, 1)
+        XCTAssertGreaterThan(fake.skippedPostProcessingCount, 1, "the skip is reapplied after the microphone actually opens")
     }
 
-    /// Waits out the delay a Return keeps after a window a new recording cut
-    /// short, on the main run loop.
+    /// Sleeps past `pasteSettleDelay`, so a timer that released a held Return
+    /// on its own would already have fired when the test checks.
     private func settle() async {
         try? await Task.sleep(for: .seconds(TextInjector.pasteSettleDelay + 0.15))
+    }
+
+    /// The start gate's continuation once the session has parked on it; fails
+    /// rather than hanging the run when start is never reached.
+    private func parked(_ gate: () -> CheckedContinuation<Void, Never>?) async
+        -> CheckedContinuation<Void, Never>? {
+        for _ in 0..<1_000 {
+            if let continuation = gate() { return continuation }
+            await Task.yield()
+        }
+        XCTFail("the session never reached its start gate")
+        return nil
     }
 
     /// What `TextInjector` reports for the current take's paste.
@@ -365,10 +409,10 @@ final class KeyGestureControllerTests: XCTestCase {
         var release: CheckedContinuation<Void, Never>?
         fake.startGate = { await withCheckedContinuation { release = $0 } }
         controller.handle(.rightCommandTap)
-        while release == nil { await Task.yield() }
+        guard let gate = await parked({ release }) else { return }
 
         controller.handle(.cancel)
-        release?.resume()
+        gate.resume()
         await controller.recordingTask?.value
         await controller.recordingTask?.value
         XCTAssertEqual(fake.stopCount, 1)
@@ -482,13 +526,17 @@ final class KeyGestureControllerTests: XCTestCase {
         XCTAssertEqual(fake.startCount, 2)
     }
 
-    /// Cold models: the hold asks for them instead of recording, and the tap
-    /// that ends the press is free to start once they are there.
-    func testAHoldThatOnlyLoadedTheModelsLeavesTheTapFree() async {
+    func testAColdHoldAndItsTapStartExactlyOneRecording() async {
         let (controller, fake, _) = controller()
         fake.ready = false
         controller.handle(.rightCommandHeld)
+        XCTAssertTrue(controller.heldPressStarted)
+        controller.handle(.rightCommandTap)
+        await controller.recordingTask?.value
+        XCTAssertEqual(fake.startCount, 1)
         XCTAssertFalse(controller.heldPressStarted)
+        controller.handle(.cancel)
+        await controller.recordingTask?.value
     }
 
     func testHoldingIsSwitchedOffWithTheTap() async {

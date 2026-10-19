@@ -28,9 +28,9 @@ final class CaptionBadgeTests: XCTestCase {
         UserDefaults.standard.set(value, forKey: TranslationSetting.key)
     }
 
-    /// A caption talk already on screen, translating ru -> en, exactly as
-    /// `beginCaptions` leaves things - but with a fake translator in place of
-    /// the native one.
+    /// A caption talk already on screen, translating ru -> en, as
+    /// `beginRecording` leaves things in captions mode - but with a fake
+    /// session in place of the real one.
     private func talking() -> DictationController {
         let controller = DictationController()
         controller.session = FakeDictationSession()
@@ -41,21 +41,21 @@ final class CaptionBadgeTests: XCTestCase {
         return controller
     }
 
-    /// Run a snapshot through and wait for the work it started, so no
-    /// translation task survives the test that spawned it.
-    private func feed(_ controller: DictationController, _ revision: UInt64) async {
+    /// Apply the current target setting and wait for the work it started, so
+    /// no translation task survives the test that spawned it.
+    private func retarget(_ controller: DictationController) async {
         controller.updateCaptionTarget()
         await controller.captionTranslateTask?.value
     }
 
     func testTheBadgeFollowsATargetChangedMidTalk() async {
         let controller = talking()
-        await feed(controller, 1)
+        await retarget(controller)
         XCTAssertEqual(controller.captionsOverlay.model.target, "EN", "baseline: the talk started as ru -> en")
 
         // The user reopens the menu mid-talk and picks German.
         target("de")
-        await feed(controller, 2)
+        await retarget(controller)
 
         XCTAssertEqual(controller.captionsOverlay.model.target, "DE",
                        "the second track is German now")
@@ -64,12 +64,12 @@ final class CaptionBadgeTests: XCTestCase {
     /// Switching translation off takes the track away together with its text.
     func testTheBadgeClearsWhenTranslationIsSwitchedOffMidTalk() async {
         let controller = talking()
-        await feed(controller, 1)
+        await retarget(controller)
         XCTAssertEqual(controller.captionsOverlay.model.target, "EN")
         controller.captionsOverlay.showTranslation("hello")
 
         target(TranslationSetting.off)
-        await feed(controller, 2)
+        await retarget(controller)
 
         XCTAssertEqual(controller.captionsOverlay.model.target, "")
         XCTAssertEqual(controller.captionsOverlay.model.translation, "")
@@ -82,12 +82,12 @@ final class CaptionBadgeTests: XCTestCase {
     /// that never arrives.
     func testTheBadgeClearsWhenTheNewTargetIsUnroutable() async {
         let controller = talking()
-        await feed(controller, 1)
+        await retarget(controller)
 
         target("xx")
         XCTAssertNil(LanguagePair.route(from: "ru", to: "xx"),
                      "xx is expected to be unsupported; test assumption is stale")
-        await feed(controller, 2)
+        await retarget(controller)
 
         XCTAssertEqual(controller.captionsOverlay.model.target, "")
     }

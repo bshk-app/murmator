@@ -133,12 +133,12 @@ enum TriggerMode: String, CaseIterable, Identifiable {
 enum HUDStyle: String, CaseIterable, Identifiable {
     /// The draft drawn at the caret, in the field's type, until the corrected
     /// text is pasted over it (`GhostText`). Apps that do not say where their
-    /// caret is get `compact` instead.
+    /// caret is get the compact controls with a separate live draft above them.
     case caret
     /// One small capsule that keeps its size and place for the whole
     /// utterance: level bars, then three dots while the text is finished.
     case compact
-    /// The live two-tier transcript, the cat and the language badge.
+    /// The live two-tier transcript and the language badge.
     case full
 
     var id: String { rawValue }
@@ -154,6 +154,14 @@ enum HUDStyle: String, CaseIterable, Identifiable {
 /// dictate into, unlike a chord, which macOS may have a shortcut of its own
 /// for (`SystemShortcuts`). Off is for people who have given right ⌘ a job of
 /// their own (a layout switcher, Karabiner).
+enum ModelLoadingPolicy: String, CaseIterable {
+    case onDemand, atLaunch
+    static let key = "murmur.modelLoadingPolicy"
+    static var current: Self {
+        UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .atLaunch
+    }
+}
+
 enum RightCommandTrigger {
     static let key = "murmur.rightCommandTap"
     /// Defaults to `true` when unset.
