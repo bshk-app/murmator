@@ -11,6 +11,15 @@ release-please drafts each section from conventional commits and opens a release
 PR. Rewrite those generated lines in the PR into concise prose a person should
 read in an update panel before merging it.
 
+## [0.7.1](https://github.com/bshk-app/murmator/compare/murmur-v0.7.0...murmur-v0.7.1) (2026-10-19)
+
+
+### Fixed
+
+* **build:** type status icon bar heights explicitly ([6b8106c](https://github.com/bshk-app/murmator/commit/6b8106c246ec269703ae7bedad7110f025c60812))
+* **build:** type status icon bar heights explicitly ([6550d1a](https://github.com/bshk-app/murmator/commit/6550d1acc069b159a0737af33abe71c370f7a430))
+* **build:** type status icon heights for the CI compiler ([6b8106c](https://github.com/bshk-app/murmator/commit/6b8106c246ec269703ae7bedad7110f025c60812))
+
 ## [0.7.0] - 2026-10-19
 
 ### Added
