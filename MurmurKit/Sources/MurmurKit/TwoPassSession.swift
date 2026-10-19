@@ -3,12 +3,13 @@ import Foundation
 /// Live draft plus a batch final on the same utterance audio.
 ///
 /// The live lane is whatever the caller injects (Nemotron streaming). The batch
-/// lane sees the whole buffer at `finishText()` and is the pasted result.
+/// lane sees a single speech span at `finishText()` and is the pasted result.
 final class TwoPassSession: UtteranceSession {
     private let liveStep: ([Float]) -> Void
     private let liveText: () -> String
     private let liveFinish: () -> Void
     private let batch: ([Float]) -> String
+    private let batchInput: ([Float], Float?) -> [Float]
 
     private var buffer: [Float] = []
     private var liveReleased = false
@@ -17,12 +18,16 @@ final class TwoPassSession: UtteranceSession {
         liveStep: @escaping ([Float]) -> Void,
         liveText: @escaping () -> String,
         liveFinish: @escaping () -> Void,
-        batch: @escaping ([Float]) -> String
+        batch: @escaping ([Float]) -> String,
+        batchInput: @escaping ([Float], Float?) -> [Float] = {
+            BatchAudioTrim.samples($0, peakRMS: $1)
+        }
     ) {
         self.liveStep = liveStep
         self.liveText = liveText
         self.liveFinish = liveFinish
         self.batch = batch
+        self.batchInput = batchInput
     }
 
     /// Stop spending compute on the live draft. Further `step`s only append audio
@@ -43,11 +48,17 @@ final class TwoPassSession: UtteranceSession {
     var currentText: (confirmed: String, partial: String) { ("", liveText()) }
 
     func finishText() -> String {
+        finishText(peakRMS: nil)
+    }
+
+    func finishText(peakRMS: Float?) -> String {
         if !liveReleased {
             liveReleased = true
             liveFinish()
         }
-        let final = batch(buffer)
+        let audio = batchInput(buffer, peakRMS)
+        guard !audio.isEmpty else { return "" }
+        let final = batch(audio)
         return final.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : final
     }
 }

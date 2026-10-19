@@ -8,6 +8,9 @@ public struct RecordedUtterance: Identifiable, Codable, Hashable, Sendable {
     public var translation: String?
     public var settled: Bool
     public var translationFailed: Bool?
+    public var source: ConversationSource?
+    public var sourceID: UUID?
+    public var sourceName: String?
     public init(id: UInt64, startSample: Int, endSample: Int, text: String, translation: String? = nil, settled: Bool = false) {
         self.id = id; self.startSample = startSample; self.endSample = endSample
         self.text = text; self.translation = translation; self.settled = settled
@@ -26,7 +29,8 @@ public struct UtteranceTranslation: Sendable {
 }
 
 /// Durable conversation content is independent of any visible caption window.
-/// A correction replaces only the audio ranges it covers, never the whole log.
+/// ASR corrections replace only their covered ranges. Once finished, the text
+/// editor can correct the whole transcript while preserving those audio spans.
 public struct RecordingTranscript: Sendable {
     public private(set) var utterances: [RecordedUtterance] = []
     public private(set) var provisional = ""
@@ -35,9 +39,10 @@ public struct RecordingTranscript: Sendable {
     private var settledBoundary = -1
     private var settledIDs: Set<UInt64> = []
     private var finished = false
+    private var finalEditedText: String?
     public init() {}
     public var hasSnapshots: Bool { receivedSnapshot }
-    public var text: String { (utterances.map(\.text) + [provisional]).filter { !$0.isEmpty }.joined(separator: " ") }
+    public var text: String { finalEditedText ?? (utterances.map(\.text) + [provisional]).filter { !$0.isEmpty }.joined(separator: " ") }
     public var translatedText: String { utterances.compactMap(\.translation).filter { !$0.isEmpty }.joined(separator: " ") }
 
     /// Appends one final, nonoverlapping section produced by a serial speech
@@ -95,6 +100,32 @@ public struct RecordingTranscript: Sendable {
             utterances[index].translation = nil
             utterances[index].translationFailed = nil
         }
+    }
+    /// Text editing retains audio ranges, IDs and source metadata. Old translations
+    /// cannot survive a changed original, including settled/finalized utterances.
+    public mutating func applyTextEdits(_ values: [UInt64: String]) {
+        var changed = false
+        for index in utterances.indices {
+            guard let text = values[utterances[index].id], !text.isEmpty, text != utterances[index].text else { continue }
+            utterances[index].text = text
+            utterances[index].translation = nil
+            utterances[index].translationFailed = nil
+            changed = true
+        }
+        if changed { finalEditedText = nil; revision &+= 1 }
+    }
+    /// Apply one final whole-transcript correction, retaining IDs, audio spans,
+    /// source metadata and the exact corrected text (including paragraph breaks).
+    public mutating func applyFinalTextEdit(_ text: String) {
+        guard finished, !utterances.isEmpty, !text.isEmpty, text != self.text else { return }
+        let parts = TranscriptTextAlignment.parts(text, matching: utterances.map(\.text))
+        for index in utterances.indices where parts[index] != utterances[index].text {
+            utterances[index].text = parts[index]
+            utterances[index].translation = nil
+            utterances[index].translationFailed = nil
+        }
+        finalEditedText = text
+        revision &+= 1
     }
     public mutating func finish(fallback: String, endSample: Int) {
         guard !finished else { return }

@@ -3,8 +3,12 @@ import AVFoundation
 import Foundation
 import KeyboardShortcuts
 import MurmurKit
+import class MurmurCloud.ProviderRecordingSession
 import Observation
 import PostHog
+import os
+
+private let dictationLog = Logger(subsystem: "app.bshk.murmur", category: "dictation")
 
 /// Platform presentation and delivery over the shared iOS/macOS recording session.
 @MainActor
@@ -30,6 +34,22 @@ final class DictationController {
         didSet { syncKeyCapture() }
     }
     private(set) var sessionWarning: String?
+    /// Memory-only recovery survives a new take and the HUD fading away.
+    private(set) var lastOutputText = ""
+    private struct PendingDelivery {
+        let generation: Int
+        let text: String
+        let translation: String
+        let quality: Bool
+        let started = ContinuousClock.now
+    }
+    @ObservationIgnored private var pendingDelivery: PendingDelivery?
+    var isDelivering: Bool { pendingDelivery != nil }
+    @ObservationIgnored var accessibilityTrusted: () -> Bool = { Accessibility.isTrusted }
+    @ObservationIgnored var pasteTranscript: (String, Bool, @escaping @Sendable (Bool) -> Void) -> TextInjector.Result = {
+        TextInjector.paste($0, submit: $1, settled: $2)
+    }
+    private(set) var hasCapturedAudio = false
     private(set) var modelPreparation: RecordingSession.Preparation?
 
     /// Pinned since the Insert-mode setting was removed. Kept in the events rather
@@ -38,6 +58,7 @@ final class DictationController {
 
     var session: any RecordingSessioning
     let hud = HUDController()
+    let companion = DictationCompanion()
     /// Captions render here, not in the HUD — see `CaptionsOverlay`.
     let captionsOverlay = CaptionsOverlay()
     @ObservationIgnored var captionSource: String?
@@ -52,6 +73,10 @@ final class DictationController {
     /// a system-wide event tap has no place in a unit test, so they set
     /// `keyCaptureSink` to a recorder instead.
     @ObservationIgnored private var keyTap: GlobalKeyTap?
+    @ObservationIgnored var onboardingGestureHandler: ((KeyGesture) -> Bool)?
+    @ObservationIgnored var releaseOnboardingSession: (() async -> Void)?
+    private(set) var onboardingOwnsSession = false
+    @ObservationIgnored private var bootstrapped = false
     @ObservationIgnored var keyCaptureSink: KeyCaptureSink?
     /// Whether this session finishes on Return and cancels on Escape. Latched
     /// at start: every tap-on dictation does (there is no key held down to
@@ -152,6 +177,8 @@ final class DictationController {
     @ObservationIgnored private var translationPrepare: Task<Void, Never>?
     /// Observed by the popover to draw the download bar.
     private(set) var translationDownload: TranslationDownload?
+    private(set) var translationPreparationError: String?
+    private(set) var isPreparingTranslation = false
     /// Stamps each preparation so a cancelled one cannot repaint or clear the
     /// bar that now belongs to a later choice.
     @ObservationIgnored private var translationGeneration = 0
@@ -159,7 +186,7 @@ final class DictationController {
     init(session: (any RecordingSessioning)? = nil) {
         let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Murmur", isDirectory: true)
-        self.session = session ?? RecordingSession(modelsRoot: root,
+        self.session = session ?? ProviderRecordingSession(modelsRoot: root,
             translationRoot: TranslationModels.root, memoryLimit: Int(Double(ProcessInfo.processInfo.physicalMemory) * 0.6))
         if self.session.isPrepared { state = .idle }
         connectSession()
@@ -173,6 +200,8 @@ final class DictationController {
 
     func receive(_ event: RecordingSession.Event) {
         switch event {
+        case let .capture(frames, _):
+            if frames > 0, state == .startingRecording || state == .recording { hasCapturedAudio = true }
         case let .snapshot(snapshot):
             guard state == .recording || state == .transcribing else { return }
             echo(snapshot.confirmed.map(\.text).joined(separator: " "), snapshot.provisional)
@@ -184,7 +213,9 @@ final class DictationController {
                 modelPreparation = progress
                 state = progress.stage == .unloading ? .unloadingModels : .loadingModels
             }
-            if progress.stage == .translation, let fraction = progress.fraction {
+            companion.updatePreparation(modelPreparationStatus, fraction: progress.fraction)
+            if progress.stage == .translation, translationPreparationError == nil,
+               let fraction = progress.fraction {
                 translationDownload = .init(fraction: fraction, receivedBytes: 0, totalBytes: 0)
             }
         case let .failure(failure):
@@ -195,14 +226,14 @@ final class DictationController {
             case let .translation(message):
                 sessionWarning = message
                 if captionsRunning { captionsOverlay.showTranslation("") }
-                FileHandle.standardError.write(Data("Translation failed: \(message)\n".utf8))
+                dictationLog.error("Translation failed")
             case let .capture(message):
                 sessionWarning = message
                 captureFailed = true
                 endRecording()
             case let .recording(message):
 
-                FileHandle.standardError.write(Data("Diagnostic audio failed: \(message)\n".utf8))
+                dictationLog.error("Diagnostic audio failed")
             }
         case .state(.preparing):
             if !isActive, !isPreparing, !starting { state = .loadingModels }
@@ -215,6 +246,13 @@ final class DictationController {
             if !isPreparing, !starting, isManagingModels, modelPreparation?.stage == .unloading {
                 modelPreparation = nil
                 state = .modelsUnloaded
+            }
+        case let .finishing(stage):
+            guard state == .transcribing, !discarding else { return }
+            switch stage {
+            case .recognition: companion.finishing(String(localized: "Refining the transcript…"))
+            case .languageDetection: companion.finishing(String(localized: "Detecting the final language…"))
+            case .textEditing: companion.finishing(String(localized: "Correcting spelling and grammar…"))
             }
         default: break
         }
@@ -322,9 +360,10 @@ final class DictationController {
 
     var isManagingModels: Bool { state == .loadingModels || state == .unloadingModels }
     var isStartingRecording: Bool { starting }
-    var canChangeModels: Bool { !isActive && !starting }
+    var canChangeModels: Bool { !isActive && !starting && !onboardingOwnsSession }
     var loadedModelName: String? {
         guard session.isPrepared, let profile = session.configuration?.profile else { return nil }
+        if let providerSession = session as? ProviderRecordingSession { return providerSession.residentSpeechModelName }
         let preview = profile.previewBackend == .whistle ? "Whistle" : "Nemotron"
         switch profile.mode {
         case .fast: return preview
@@ -338,6 +377,7 @@ final class DictationController {
         case .translation: return String(localized: "Preparing translation…")
         case .warmup: return String(localized: "Warming up recognition…")
         case .speech: return String(localized: "Loading speech model…")
+        case .textModel: return String(localized: "Loading text corrector…")
         case nil: return String(localized: "Preparing models…")
         }
     }
@@ -391,7 +431,31 @@ final class DictationController {
     ]
 
     func bootstrap() {
+        guard !bootstrapped else { return }
+        bootstrapped = true
         for step in Self.startupSteps { apply(step) }
+    }
+
+    /// Transfer model ownership only after the main application's native work drains.
+    func reserveForOnboarding() { onboardingOwnsSession = true }
+
+    func pauseForOnboarding() async {
+        onboardingOwnsSession = true
+        if preparationTask != nil || translationPrepare != nil {
+            releaseModels(includingRecordingStart: false)
+            await preparationTask?.value
+        }
+    }
+
+    func resumeAfterOnboarding() {
+        onboardingOwnsSession = false
+        onboardingGestureHandler = nil
+        releaseOnboardingSession = nil
+        syncKeyCapture()
+        if !starting, !isActive {
+            state = session.isPrepared ? .idle : .modelsUnloaded
+            if bootstrapped { prepareCurrentMode(); prepareTranslation() }
+        }
     }
 
     private func apply(_ step: StartupStep) {
@@ -404,10 +468,7 @@ final class DictationController {
             KeyboardShortcuts.onKeyDown(for: .dictateAndSend) { [weak self] in self?.hotkeyDown(submit: true) }
             KeyboardShortcuts.onKeyUp(for: .dictateAndSend) { [weak self] in self?.hotkeyUp() }
         case .keyTap:
-            let tap = GlobalKeyTap { [weak self] gesture in self?.handle(gesture) }
-            keyTap = tap
-            keyCaptureSink = tap
-            tap.start()
+            installKeyTap()
         case .microphonePermission:
             AVCaptureDevice.requestAccess(for: .audio) { _ in }
         case .currentMode:
@@ -419,6 +480,16 @@ final class DictationController {
 
     func requestAccessibility() { Accessibility.prompt() }
 
+    /// The tour and the live app share one event tap; finishing setup must not
+    /// install a second listener for the same right-⌘ press.
+    func installKeyTap() {
+        guard keyTap == nil else { return }
+        let tap = GlobalKeyTap { [weak self] gesture in self?.handle(gesture) }
+        keyTap = tap
+        keyCaptureSink = tap
+        tap.start()
+    }
+
     /// Re-load when the Model or App-mode setting changes (popover) — pulls in the
     /// newly selected mode's models so the next press starts instantly.
     ///
@@ -426,14 +497,27 @@ final class DictationController {
     /// which would strand the running mic (stop only fires from `.recording`).
     func prepareCurrentMode() {
         guard canChangeModels else { return }
+        if ModelLoadingPolicy.current == .onDemand {
+            if state != .unloadingModels, session.isPrepared || isPreparing || isPreparingTranslation { releaseModels() }
+            return
+        }
         prepare(mode: ModelSetting.current)
     }
 
     /// Prepares the selected pair through the common owner before the next recording.
     func prepareTranslation() {
+        guard !onboardingOwnsSession else { return }
+        if ModelLoadingPolicy.current == .onDemand, !isActive {
+            if state != .unloadingModels, session.isPrepared || isPreparing || isPreparingTranslation { releaseModels() }
+            return
+        }
         let previousPreparation = translationPrepare
         previousPreparation?.cancel()
         translationDownload = nil
+        let previousError = translationPreparationError
+        translationPreparationError = nil
+        isPreparingTranslation = false
+        translationPrepare = nil
         translationGeneration &+= 1
         let generation = translationGeneration
         if captionsRunning, state == .recording {
@@ -443,25 +527,73 @@ final class DictationController {
         guard !isActive else { return }
         let source = SpeechLanguage.current
         guard let target = TranslationSetting.target,
-              TranslationSetting.canTranslate(from: source) else { return }
+              TranslationSetting.canTranslate(from: source) else {
+            if let previousPreparation {
+                // Keep ownership until cancelled native/download work drains.
+                // A new recording or model choice must still be able to await it.
+                isPreparingTranslation = true
+                translationPrepare = Task { [weak self] in
+                    await previousPreparation.value
+                    guard let self, translationGeneration == generation, !Task.isCancelled else { return }
+                    translationPrepare = nil
+                    isPreparingTranslation = false
+                    translationDownload = nil
+                    modelPreparation = nil
+                    if !isActive, !starting, !isPreparing {
+                        state = session.isPrepared ? .idle : .modelsUnloaded
+                    }
+                }
+            } else if previousError != nil, !isPreparing {
+                sessionWarning = nil
+                state = session.isPrepared ? .idle : .modelsUnloaded
+            }
+            return
+        }
         let pendingSpeech = preparationTask
+        isPreparingTranslation = true
+        sessionWarning = nil
+        state = .loadingModels
         translationPrepare = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if translationGeneration == generation {
+                    translationDownload = nil
+                    isPreparingTranslation = false
+                    translationPrepare = nil
+                    modelPreparation = nil
+                }
+            }
             await previousPreparation?.value
             await pendingSpeech?.value
-            guard let self, !Task.isCancelled, translationGeneration == generation else { return }
+            guard !Task.isCancelled, translationGeneration == generation else { return }
             do {
                 let profile = try WhistleSetting.profile(language: source, mode: ModelSetting.current)
-                try await session.prepare(.init(profile: profile, target: target))
+                try await session.prepare(.init(profile: profile, target: target,
+                    postProcessing: AppMode.current != .captions && UserDefaults.standard.bool(forKey: "speechPostProcessingEnabled"),
+                    postProcessingModelID: UserDefaults.standard.string(forKey: "speechPostProcessingModel"),
+                    preloadPostProcessing: ModelLoadingPolicy.current == .atLaunch))
+                guard translationGeneration == generation, !Task.isCancelled, !isActive, !starting else { return }
+                state = .idle
             } catch is CancellationError {
             } catch {
                 if translationGeneration == generation, !Task.isCancelled, !isActive {
                     modelPreparation = nil
-                    state = .error("Translation preparation failed: \(error.localizedDescription)")
+                    let message = Self.translationErrorMessage(error)
+                    translationPreparationError = message
+                    state = .error("Translation unavailable: \(message)")
                 }
-                FileHandle.standardError.write(Data("Translation preparation failed: \(error.localizedDescription)\n".utf8))
+                dictationLog.error("Translation preparation failed: domain=\((error as NSError).domain, privacy: .public) code=\((error as NSError).code)")
             }
-            if translationGeneration == generation { translationDownload = nil }
         }
+    }
+
+    var canRetryTranslationPreparation: Bool {
+        translationPreparationError != nil && !isPreparingTranslation && canChangeModels
+    }
+
+    func retryTranslationPreparation() {
+        guard canRetryTranslationPreparation else { return }
+        prepareTranslation()
     }
 
     /// The picker owns the desired target; the shared session owns cancellation,
@@ -480,7 +612,7 @@ final class DictationController {
                 try await session.setTranslation(target: target, priority: .quality)
             }
             catch is CancellationError {} catch {
-                FileHandle.standardError.write(Data("Translation failed: \(error.localizedDescription)\n".utf8))
+                dictationLog.error("Translation failed: domain=\((error as NSError).domain, privacy: .public) code=\((error as NSError).code)")
             }
         }
     }
@@ -584,7 +716,7 @@ final class DictationController {
                     guard let self, self.qualityDownloadGenerations[pair] == generation else { return }
                     self.qualityDownloads[pair] = nil
                     self.qualityDownloadTasks[pair] = nil
-                    self.qualityDownloadErrors[pair] = Self.qualityErrorMessage(error)
+                    self.qualityDownloadErrors[pair] = Self.translationErrorMessage(error)
                 }
                 PostHogSDK.shared.capture("quality_model_download_failed", properties: [
                     "pair": pair.description,
@@ -594,23 +726,39 @@ final class DictationController {
         }
     }
 
-    /// `TranslationDownloader.Err` has no `CustomStringConvertible` - it is
-    /// meant for callers to match on, not to show - so a raw
-    /// `localizedDescription` here would read as "the operation couldn't be
-    /// completed" with no useful detail. Network errors (`URLError` etc.) go
-    /// through untouched: their `localizedDescription` already says the real
-    /// thing ("The Internet connection appears to be offline").
-    private static func qualityErrorMessage(_ error: Error) -> String {
+    /// Decode typed download failures once for automatic preparation and the
+    /// explicit quality download; raw enum descriptions hide the actual cause.
+    private static func translationErrorMessage(_ error: Error) -> String {
+        if let failure = error as? TranslationService.Failure {
+            return "\(failure.leg): \(translationErrorMessage(failure.underlying))"
+        }
+        if let network = error as? URLError {
+            switch network.code {
+            case .notConnectedToInternet:
+                return "You are offline. Check your connection and try again."
+            case .networkConnectionLost:
+                return "The network connection was lost. Check your connection and try again."
+            case .timedOut:
+                return "The download timed out. Check your connection and try again."
+            case .cannotFindHost, .cannotConnectToHost:
+                return "Could not connect to the model server. Try again."
+            default: break
+            }
+        }
         guard let err = error as? TranslationDownloader.Err else {
             return error.localizedDescription
         }
         switch err {
         case .insufficientSpace:
-            return "Not enough disk space for the quality model."
-        case .httpStatus, .digestMismatch, .notGzip, .inflateFailed:
-            return "Download failed \u{2014} try again."
+            return "Not enough disk space for the translation model. Free some space and try again."
+        case let .httpStatus(status, _):
+            return "The model server returned HTTP \(status). Try again."
+        case .digestMismatch:
+            return "The downloaded model failed verification. Try again."
+        case .notGzip, .inflateFailed:
+            return "The downloaded model could not be unpacked. Try again."
         case .unpinnedDirection:
-            return "No quality model exists for this language pair."
+            return "No verified translation model exists for this language pair."
         case .qualityDownloadBusy:
             return "Another quality model is downloading \u{2014} try again once it finishes."
         }
@@ -630,6 +778,10 @@ final class DictationController {
         state = previous == nil ? .loadingModels : .unloadingModels
         let pendingTranslation = translationPrepare
         pendingTranslation?.cancel()
+        translationGeneration &+= 1
+        translationPrepare = nil
+        isPreparingTranslation = false
+        translationDownload = nil
         preparationTask = Task { @MainActor in
             if previous != nil || pendingTranslation != nil { await session.cancel() }
             await previous?.value
@@ -645,7 +797,10 @@ final class DictationController {
             do {
                 let profile = try WhistleSetting.profile(language: language, mode: mode)
                 state = .loadingModels
-                try await session.prepare(.init(profile: profile))
+                try await session.prepare(.init(profile: profile,
+                    postProcessing: AppMode.current != .captions && UserDefaults.standard.bool(forKey: "speechPostProcessingEnabled"),
+                    postProcessingModelID: UserDefaults.standard.string(forKey: "speechPostProcessingModel"),
+                    preloadPostProcessing: ModelLoadingPolicy.current == .atLaunch))
                 guard preparationGeneration == generation, !Task.isCancelled else { return }
                 state = .idle
             } catch {
@@ -657,15 +812,24 @@ final class DictationController {
 
     /// Cancels preparation and waits for native/MLX work to drain before Ready
     /// can be shown or another model can acquire memory. Cached files remain.
-    func releaseModels() {
+    func releaseModels(includingRecordingStart: Bool = true) {
         guard state != .recording, state != .transcribing else { return }
+        if includingRecordingStart || !starting {
+            companion.dismiss()
+            hud.dismiss()
+        }
         let previous = preparationTask, pendingTranslation = translationPrepare
-        let pendingStart = starting ? recordingTask : nil
+        let pendingStart = includingRecordingStart && starting ? recordingTask : nil
         previous?.cancel(); pendingTranslation?.cancel(); pendingStart?.cancel()
+        translationGeneration &+= 1
+        isPreparingTranslation = false
+        translationDownload = nil
         preparationGeneration &+= 1
         let generation = preparationGeneration
-        if starting { recordingGeneration &+= 1 }
-        starting = false; stopAfterStart = false
+        if includingRecordingStart {
+            if starting { recordingGeneration &+= 1 }
+            starting = false; stopAfterStart = false
+        }
         isPreparing = true
         sessionWarning = nil
         modelPreparation = .init(stage: .unloading, fraction: nil)
@@ -687,6 +851,7 @@ final class DictationController {
     /// Hotkey press: a running session keeps the trigger it started with even if
     /// Settings change underneath it.
     private func hotkeyDown(submit: Bool) {
+        if onboardingGestureHandler?(.rightCommandHeld) == true { return }
         RecordingTriggerPolicy.route(
             .keyDown,
             state: recordingTriggerState,
@@ -712,6 +877,7 @@ final class DictationController {
 
     /// Hotkey release only ends dictation in hold mode (toggle ignores release).
     private func hotkeyUp() {
+        if onboardingGestureHandler?(.rightCommandReleased) == true { return }
         RecordingTriggerPolicy.route(
             .keyUp,
             state: recordingTriggerState,
@@ -725,6 +891,7 @@ final class DictationController {
     /// Not `private`: tests drive the gestures directly, since the tap that
     /// produces them cannot run in a test.
     func handle(_ gesture: KeyGesture) {
+        if onboardingGestureHandler?(gesture) == true { return }
         switch gesture {
         case .rightCommandTap:
             guard RightCommandTrigger.isEnabled else { return }
@@ -747,9 +914,8 @@ final class DictationController {
             // Tap-on until the key says otherwise: if it comes up in time to
             // be a tap, this is the tap's dictation, already listening.
             beginRecording(submit: false, forceToggle: true, source: .rightCommand)
-            // Only if it really started: with the models still cold it asks for
-            // them instead, and the tap that ends this press may then start one.
-            // A start that fails later still counts - this press made it.
+            // The hold owns preparation too: a short release keeps that same
+            // pending take, and a long release cancels it before the mic opens.
             heldPressStarted = state == .recording || starting
         case .rightCommandReleased:
             guard RightCommandTrigger.isEnabled else { return }
@@ -784,6 +950,7 @@ final class DictationController {
             let finishing = state == .transcribing || (starting && stopAfterStart)
             guard confirmsWithReturn, finishing, !discarding else { return }
             submitRequested = true
+            session.skipPostProcessing()
             hud.willSubmit()
         }
     }
@@ -819,15 +986,22 @@ final class DictationController {
     /// Not `private`: tests drive this with a substituted session to prove
     /// what it latches.
     func beginRecording(submit: Bool, forceToggle: Bool = false, source: TriggerSource = .shortcut) {
-        guard !isActive, !isPreparing, !starting else { return }
+        guard !isActive, !starting else { return }
+        guard state != .unloadingModels || onboardingOwnsSession else {
+            companion.error(String(localized: "Finishing the previous model operation. Try again in a moment."))
+            return
+        }
         let language = SpeechLanguage.current
         let modelMode = ModelSetting.current.effective(for: language)
-        guard session.isPrepared || translationPrepare != nil else { prepare(mode: modelMode); return }
         let captions = AppMode.current == .captions
+        let hudStyle: HUDStyle = Accessibility.isTrusted ? .current : .full
+        // Preserve the target before loading/waiting UI can change focus.
+        let initialCaret = !captions && hudStyle == .caret ? hud.locateCaret(true) : nil
         let toggle = forceToggle || Self.togglesOnPress
         submitOnFinish = captions ? false : submit
-        sessionWarning = nil
+        sessionWarning = translationPreparationError.map { "Translation unavailable: \($0)" }
         captureFailed = false
+        hasCapturedAudio = false
         starting = true
         stopAfterStart = false
         latchedToggle = toggle
@@ -840,31 +1014,57 @@ final class DictationController {
         // previous paste still has to send it.
         if pasteSettling { closePasteSettle(pasteHasLanded: false) }
         recordingGeneration &+= 1
+        pendingDelivery = nil
         modelPreparation = nil
-        state = .loadingModels
-        connectSession()
+        state = session.isPrepared && !isPreparing && !isPreparingTranslation && !onboardingOwnsSession
+            ? .startingRecording : .loadingModels
+        companion.preparing(modelPreparationStatus, fraction: modelPreparation?.fraction,
+                            onCancel: { [weak self] in self?.releaseModels() })
+        let pendingSpeech = preparationTask
         let pendingTranslation = translationPrepare
+        let releaseTour = onboardingOwnsSession ? releaseOnboardingSession : nil
         let generation = recordingGeneration
         recordingTask = Task {
             defer { if recordingGeneration == generation { starting = false } }
             do {
+                await releaseTour?()
+                await pendingSpeech?.value
                 await pendingTranslation?.value
                 try Task.checkCancellation()
                 guard recordingGeneration == generation else { throw CancellationError() }
+                // A tour finalizer may restore its borrowed handler. Reconnect
+                // only after it has finished, so live text cannot be stolen.
+                connectSession()
+                state = session.isPrepared ? .startingRecording : .loadingModels
+                if let message = translationPreparationError {
+                    sessionWarning = "Translation unavailable: \(message)"
+                }
                 let profile = try WhistleSetting.profile(language: language, mode: modelMode)
                 // Translate captions continuously; dictation chooses its output target at Stop.
                 let target = captions && TranslationSetting.canTranslate(from: language) ? TranslationSetting.target : nil
                 do {
-                    try await session.prepare(.init(profile: profile, target: target))
+                    try await session.prepare(.init(profile: profile, target: target,
+                        postProcessing: !captions && UserDefaults.standard.bool(forKey: "speechPostProcessingEnabled"),
+                        postProcessingModelID: UserDefaults.standard.string(forKey: "speechPostProcessingModel"),
+                    preloadPostProcessing: ModelLoadingPolicy.current == .atLaunch))
                 } catch {
+                    try Task.checkCancellation()
+                    guard recordingGeneration == generation else { throw CancellationError() }
                     guard target != nil else { throw error }
                     // A translation model failure must not prevent live original captions.
-                    try await session.prepare(.init(profile: profile))
+                    let message = Self.translationErrorMessage(error)
+                    translationPreparationError = message
+                    sessionWarning = "Translation unavailable: \(message)"
+                    try await session.prepare(.init(profile: profile,
+                        postProcessing: !captions && UserDefaults.standard.bool(forKey: "speechPostProcessingEnabled"),
+                        postProcessingModelID: UserDefaults.standard.string(forKey: "speechPostProcessingModel"),
+                    preloadPostProcessing: ModelLoadingPolicy.current == .atLaunch))
                 }
                 try Task.checkCancellation()
                 guard recordingGeneration == generation else { throw CancellationError() }
                 modelPreparation = nil
                 state = .startingRecording
+                companion.updatePreparation(String(localized: "Starting microphone…"), fraction: nil)
                 try await session.start(microphoneUID: MicrophoneSetting.currentUID,
                                         recordingURL: captions ? nil : diagnosticRecordingURL())
                 try Task.checkCancellation()
@@ -891,17 +1091,19 @@ final class DictationController {
                               confirmsWithReturn: confirmsWithReturn,
                               // Without Accessibility nothing gets typed, and the
                               // live text is the only place the words show up.
-                              style: Accessibility.isTrusted ? .current : .full,
+                              style: hudStyle, initialCaret: initialCaret,
                               shortcutLabel: activeShortcutLabel(submit: submitOnFinish),
                               onStop: { [weak self] in self?.endRecording() })
                 }
                 starting = false
                 if stopAfterStart { endRecording() }
+                else { companion.dismiss() }
             } catch {
                 guard recordingGeneration == generation, !Task.isCancelled else { return }
                 modelPreparation = nil
                 state = .error(error.localizedDescription)
-                hud.error(error.localizedDescription)
+                hud.dismiss()
+                companion.error(error.localizedDescription)
                 PostHogSDK.shared.capture("dictation_failed", properties: ["error": error.localizedDescription])
             }
         }
@@ -914,7 +1116,7 @@ final class DictationController {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             return directory.appendingPathComponent("\(DiagnosticRecordings.filePrefix)\(UUID().uuidString).wav")
         } catch {
-            FileHandle.standardError.write(Data("Diagnostic audio failed: \(error.localizedDescription)\n".utf8))
+            dictationLog.error("Diagnostic audio failed: domain=\((error as NSError).domain, privacy: .public) code=\((error as NSError).code)")
             return nil
         }
     }
@@ -927,11 +1129,6 @@ final class DictationController {
         } else {
             hud.update(confirmed: confirmed, partial: partial)
         }
-        #if DEBUG
-        let line = partial.isEmpty ? confirmed : "\(confirmed) ⟨\(partial)⟩"
-        let tail = line.count > 100 ? "…" + String(line.suffix(100)) : line
-        FileHandle.standardError.write(Data("\r\u{1B}[2K\(tail)".utf8))
-        #endif
     }
 
     /// Escape: stop listening and insert nothing. Runs the ordinary stop so the
@@ -952,35 +1149,56 @@ final class DictationController {
         }
         guard state == .recording else { return }
         let discard = discarding
+        if submitRequested { session.skipPostProcessing() }
         let cancelReasonAtStop = cancelReason
         state = .transcribing
         let captions = captionsRunning
         let displayOnly = captions || captureFailed || discard
         let modelModeAtStop = completedModelMode.rawValue
         let submitAtStop = submitOnFinish
-        let target = TranslationSetting.canTranslate(from: translationSource) ? TranslationSetting.target : nil
+        let requestedTarget = TranslationSetting.target
+        let selectedSource = translationSource
         captionTranslateTask?.cancel()
         if captions {
             captionsOverlay.dismiss()
         } else if discard {
             hud.dismiss()
+            companion.dismiss()
         } else {
             hud.finalizing()
+            companion.finishing(String(localized: "Refining the transcript…"))
         }
         recordingTask = Task {
             defer {
                 if !captions { Task.detached(priority: .utility) { DiagnosticRecordings.sweep() } }
             }
             do {
+                if discard && session.configuration?.postProcessing == true {
+                    await session.cancel()
+                    state = .modelsUnloaded
+                    syncKeyCapture()
+                    return
+                }
                 // Close the microphone before potentially preparing a newly selected translation.
                 let source = try await session.stopSource()
+                let target = requestedTarget.flatMap {
+                    LanguagePair.route(from: source.sourceLanguage ?? selectedSource, to: $0) == nil ? nil : $0
+                }
                 var result = source
                 if !displayOnly && !captureFailed {
                     do {
+                        let previousError = translationPreparationError
                         try await session.setTranslation(target: target, priority: .quality)
+                        translationPreparationError = nil
+                        if let previousError,
+                           sessionWarning == "Translation unavailable: \(previousError)" || sessionWarning == "Translation failed: \(previousError)" {
+                            sessionWarning = nil
+                        }
                         if target != nil { hud.translating() }
                     } catch {
-                        sessionWarning = "Translation failed: \(error.localizedDescription)"
+                        let message = Self.translationErrorMessage(error)
+                        translationPreparationError = message
+                        sessionWarning = "Translation failed: \(message)"
                     }
                 } else if captureFailed {
                     try await session.setTranslation(target: nil, priority: .quality)
@@ -990,7 +1208,9 @@ final class DictationController {
                 } catch {
                     // Always finish the shared lifecycle, even if target preparation failed.
                     // The original remains the atomic delivery fallback.
-                    sessionWarning = "Translation failed: \(error.localizedDescription)"
+                    let message = Self.translationErrorMessage(error)
+                    translationPreparationError = message
+                    sessionWarning = "Translation failed: \(message)"
                 }
                 let final = result.text
                 if discard {
@@ -1014,11 +1234,8 @@ final class DictationController {
                     // Read now, not at stop: a second Return lands while the
                     // text is still being finalised, which is after the stop.
                     let submit = submitAtStop || submitRequested
-                    let delivery = payload.isEmpty ? TranscriptDelivery.typed : insertFinal(payload, submit: submit)
-                    if confirmsWithReturn, !payload.isEmpty, delivery == .typed {
-                        holdReturnUntilPasteLands(alreadySubmitting: submit)
-                    }
-                    hud.finish(final, delivery: delivery, translation: translated, translationIsQuality: !translated.isEmpty && session.configuration?.translationQuality == .quality)
+                    let delivery = deliverFinal(payload, source: final, translation: translated,
+                        quality: !translated.isEmpty && session.configuration?.translationQuality == .quality, submit: submit)
                     PostHogSDK.shared.capture("dictation_completed", properties: [
                         "word_count": final.split(separator: " ").count, "character_count": final.count,
                         "is_empty": final.isEmpty, "model_mode": modelModeAtStop,
@@ -1027,12 +1244,16 @@ final class DictationController {
                     ])
                 }
                 captionsRunning = false
+                if let warning = sessionWarning, !discard {
+                    companion.error(warning)
+                } else { companion.dismiss() }
                 captionSource = nil
                 captionTarget = nil
                 state = discard ? .idle : .transcribed(final)
             } catch {
                 state = .error(error.localizedDescription)
-                hud.error(error.localizedDescription)
+                hud.dismiss()
+                companion.error(error.localizedDescription)
             }
         }
     }
@@ -1059,6 +1280,20 @@ final class DictationController {
     /// took the text, or none did. A Return held back for text that never
     /// landed is not sent - it would send the field without it.
     func pasteDidSettle(landed: Bool, generation: Int) {
+        if let pending = pendingDelivery, pending.generation == generation,
+           recordingGeneration == generation {
+            pendingDelivery = nil
+            let failure = String(localized: "Could not paste the text. Copy Last Dictation is available in the Murmator menu.")
+            hud.finish(pending.text, delivery: landed ? .typed : .failed(failure),
+                translation: pending.translation, translationIsQuality: pending.quality)
+            if !landed {
+                sessionWarning = failure
+                companion.error(failure)
+            }
+            let elapsed = pending.started.duration(to: .now).components
+            let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
+            dictationLog.notice("Delivery settled: generation=\(generation) read=\(landed) seconds=\(seconds) characters=\(self.lastOutputText.count)")
+        }
         if returnAwaitingPaste == generation {
             returnAwaitingPaste = nil
             if landed { pressReturn() }
@@ -1087,11 +1322,38 @@ final class DictationController {
 
     /// A failed phrase must never turn one atomic paste into a truncated message.
     static func completeTranslation(in transcript: RecordingTranscript) -> String {
-        guard !transcript.utterances.isEmpty,
-              transcript.utterances.allSatisfy({
-                  $0.translationFailed != true && !($0.translation ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let content = transcript.utterances.filter { !$0.text.isEmpty }
+        guard !content.isEmpty,
+              content.allSatisfy({
+                  $0.translationFailed != true && $0.translation != nil && ($0.translationFailed == false || !($0.translation ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
               }) else { return "" }
         return transcript.translatedText
+    }
+
+    /// Posting ⌘V is only a request. Keep the HUD until the injector reports
+    /// whether anyone took the text, and retain a recovery copy either way.
+    @discardableResult
+    func deliverFinal(_ payload: String, source: String, translation: String = "", quality: Bool = false, submit: Bool) -> TranscriptDelivery {
+        guard !payload.isEmpty else {
+            hud.finish(source, delivery: .typed)
+            return .typed
+        }
+        lastOutputText = payload
+        pendingDelivery = .init(generation: recordingGeneration, text: source, translation: translation, quality: quality)
+        if confirmsWithReturn { holdReturnUntilPasteLands(alreadySubmitting: submit) }
+        let delivery = insertFinal(payload, submit: submit)
+        if delivery != .typed {
+            pendingDelivery = nil
+            if pasteSettling { closePasteSettle(pasteHasLanded: true, send: false); syncKeyCapture() }
+            hud.finish(source, delivery: delivery, translation: translation, translationIsQuality: quality)
+        }
+        return delivery
+    }
+
+    func copyLastDictation() {
+        guard !lastOutputText.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(lastOutputText, forType: .string)
     }
 
     /// Paste the final transcript into the focused field. Posting ⌘V needs
@@ -1107,14 +1369,14 @@ final class DictationController {
     /// than a condition someone must remember. (A read can be a clipboard manager's;
     /// see `TextInjector.paste`.)
     private func insertFinal(_ text: String, submit: Bool) -> TranscriptDelivery {
-        guard Accessibility.isTrusted else {
+        guard accessibilityTrusted() else {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(TextInjector.payload(text, submit: submit), forType: .string)
             if !promptedAccessibility { promptedAccessibility = true; Accessibility.prompt() }
             return .failed(String(localized: "On the clipboard — grant Accessibility to type"))
         }
         let generation = recordingGeneration
-        switch TextInjector.paste(text, submit: submit, settled: { [weak self] landed in
+        switch pasteTranscript(text, submit, { [weak self] landed in
             MainActor.assumeIsolated { self?.pasteDidSettle(landed: landed, generation: generation) }
         }) {
         case .pasted:

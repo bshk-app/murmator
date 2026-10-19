@@ -40,9 +40,38 @@ struct OnTheme {
     }
 }
 
-/// Shared mascot artwork; the rail adds its own narrator bounce on top.
-func onboardingCat(_ size: CGFloat) -> some View {
-    MurmatorMascot(mood: .idle, size: size)
+/// Shared mascot artwork.
+func onboardingCat(_ size: CGFloat, mood: MascotMood = .idle) -> some View {
+    MurmatorMascot(mood: mood, size: size)
+}
+
+extension OnboardingFlow.Step {
+    /// Stepper and title-bar name.
+    var title: LocalizedStringKey {
+        switch self {
+        case .welcome: return "Welcome"
+        case .microphone: return "Microphone"
+        case .models: return "Speech models"
+        case .fast: return "Fast"
+        case .hybrid: return "Hybrid"
+        case .accurate: return "Accurate"
+        case .corrector: return "Corrector"
+        case .translation: return "Translation"
+        case .caret: return "At the caret"
+        case .done: return "Done"
+        }
+    }
+}
+
+extension OnboardingModel {
+    /// Something needs the user: the cat turns into the advisor only then.
+    var needsAdvice: Bool {
+        switch step {
+        case .microphone: return micDenied || disconnectedMicrophone != nil || micTest.failed
+        case .models: return downloadError != nil
+        default: return tryError != nil || caretNeedsFocus
+        }
+    }
 }
 
 /// Filled upward triangle — the speech-bubble tail (apex points at the cat).
@@ -74,97 +103,71 @@ private struct BubbleTailEdges: Shape {
 struct OnboardingRail: View {
     @Bindable var model: OnboardingModel
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Per-step narrator copy (mock `narration[]`). These English strings are the
-    /// String-Catalog keys (already translated in `Localizable.xcstrings`); resolved
-    /// at runtime for the typewriter via `Bundle.localizedString`.
-    private static let narration: [String] = [
-        "Hi, I’m Murmator! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?",
-        "I need two macOS permissions to work. Tap each one — I’ll tell you exactly why.",
-        "Pick the keys you’ll hold while you talk. Record your own combo, or grab a preset.",
-        "Hang tight — I’m downloading my voice. This is the only big download, ever.",
-        "Your turn! Press and hold the button and say something. Watch me catch up and tidy it.",
-        "All done — I’ll wait up in your menu bar until you need me. Just hold your keys and talk.",
-    ]
+    /// What the guide card says: one line per step, replaced by advice when
+    /// something needs the user. Shown in full at once, resolved from the String Catalog.
+    private var narration: String {
+        if model.needsAdvice {
+            switch model.step {
+            case .microphone:
+                if model.micDenied { return "I can’t hear anything yet — microphone access is off in System Settings." }
+                if model.micTest.failed { return "That input didn’t open. Pick another one and test again." }
+                return "Your microphone went away. Recordings use the system default until you pick another."
+            case .models: return "Loading didn’t work. Your downloads are kept — try again."
+            case .caret where model.caretNeedsFocus: return "Click in the practice field first, so I know where the text goes."
+            default: return "That didn’t work. Nothing is lost — read the message below and try again."
+            }
+        }
+        switch model.step {
+        case .welcome: return "Hi, I’m Murmator. I’ll show you how dictation works, one step at a time."
+        case .microphone: return "First, which microphone should I listen to? Say a few words to test it."
+        case .models: return "I need my speech models before I can listen. They stay on this Mac."
+        case .fast: return "Fast writes as you talk. It’s quick, and it can mishear — always glance at the text."
+        case .hybrid: return "Watch the draft get refined as you speak. Letting go finishes the last phrase."
+        case .accurate: return "In Accurate I stay quiet while you talk, then write it all at once."
+        case .corrector: return "The corrector tidies spelling and punctuation after you stop. Compare both sides."
+        case .translation: return "Pick a language pair and speak. You get both texts side by side."
+        case .caret: return "This time the text goes where your insertion point is — just like in any other app."
+        case .done: return "That’s the tour. Pick your everyday mode, and reopen this tour any time from the menu."
+        }
+    }
 
     private var t: OnTheme { OnTheme(scheme) }
 
-    @State private var floatUp = false           // gentle continuous bob
-    @State private var talk = false              // bounce pulse on each new line
-    @State private var typed = ""                // typewriter-revealed narration
-    @State private var typing = false
-    @State private var typeTask: Task<Void, Never>?
-    @State private var fullLine = ""             // resolved full narration line (VoiceOver label)
-
     var body: some View {
         VStack(spacing: 0) {
-            onboardingCat(96)
-                .scaleEffect(talk ? 1.07 : 1)
-                .rotationEffect(.degrees(talk ? -3 : 0))
-                .offset(y: floatUp ? -6 : 0)
-                .animation(reduceMotion ? nil : .easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: floatUp)
+            // A fixed slot: the cat never moves when the text around it changes.
+            onboardingCat(84, mood: model.needsAdvice ? .error : .idle)
+                .frame(width: 96, height: 96)
+                .clipped()
                 .padding(.bottom, 12)
-                .accessibilityHidden(true)   // decorative; the narrator text carries the info
+                .accessibilityHidden(true)   // decorative; the guide text carries the info
             narratorBubble
             Spacer(minLength: 0)
-            Text("Setup steps")
+            Text("Tour")
                 .tracking(1.4).murFont(10.5, weight: .bold)
                 .foregroundStyle(t.muted(0.45))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 11)
+                .padding(.bottom, 9)
             stepper
         }
-        .padding(.init(top: 26, leading: 24, bottom: 22, trailing: 24))
-        .frame(width: 296)
+        .padding(.init(top: 22, leading: 20, bottom: 18, trailing: 20))
+        .frame(width: 272)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(t.stage)
         .overlay(alignment: .trailing) {
             Rectangle().fill(t.line(0.08)).frame(width: 1)
         }
-        .onAppear { floatUp = true; speak() }
-        .onChange(of: model.flow.step) { _, _ in speak() }
-    }
-
-    /// Bounce the cat and type the new line out, character by character — so each
-    /// step reads as the cat actually saying it.
-    private func speak() {
-        if !reduceMotion {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.45)) { talk = true }
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(280))
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { talk = false }
-            }
-        }
-        let key = Self.narration[model.flow.step.rawValue]
-        let full = Bundle.main.localizedString(forKey: key, value: key, table: nil)
-        fullLine = full
-        typeTask?.cancel()
-        if reduceMotion {
-            typed = full; typing = false; return    // no bounce, no typewriter
-        }
-        typed = ""
-        typing = true
-        typeTask = Task { @MainActor in
-            for ch in full {
-                if Task.isCancelled { return }
-                typed.append(ch)
-                try? await Task.sleep(for: .milliseconds(18))
-            }
-            typing = false
-        }
-    }
-
-    /// Trailing accent caret while the line is still typing out.
-    private var caret: Text {
-        typing ? Text(verbatim: "▏").foregroundColor(Mur.accent) : Text(verbatim: "")
     }
 
     private var narratorBubble: some View {
-        (Text(verbatim: typed) + caret)
-            .murFont(13.5).lineSpacing(4)
+        Text(LocalizedStringKey(narration))
+            .murFont(13).lineSpacing(3)
             .foregroundStyle(t.muted(0.96))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.init(top: 13, leading: 15, bottom: 13, trailing: 15))
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .padding(.init(top: 12, leading: 14, bottom: 12, trailing: 14))
+            // Fixed height: the stepper below never moves with the text.
+            .frame(height: 112, alignment: .topLeading)
             .background(t.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(t.line(0.1), lineWidth: 1))
             // Speech-bubble tail pointing up at the cat → reads as the cat talking.
@@ -176,29 +179,35 @@ struct OnboardingRail: View {
                 .frame(width: 16, height: 8)
                 .offset(y: -6.5)
             }
-            .accessibilityLabel(Text(verbatim: fullLine))
-            .accessibilityHint("Setup narration")
+            .accessibilityHint("Tour guide")
     }
 
+    /// Passed steps can be revisited with a click.
     private var stepper: some View {
-        let labels: [LocalizedStringKey] = ["Welcome", "Permissions", "Shortcut", "Download", "Try it", "Done"]
-        let current = model.flow.step.rawValue
-        return VStack(spacing: 3) {
-            ForEach(0 ..< labels.count, id: \.self) { i in
+        let steps = OnboardingFlow.Step.allCases
+        let current = model.step.rawValue
+        return VStack(spacing: 2) {
+            ForEach(steps, id: \.self) { step in
+                let i = step.rawValue
                 let done = i < current, active = i == current
-                HStack(spacing: 11) {
-                    stepDot(index: i, done: done, active: active)
-                    Text(labels[i])
-                        .murFont(13, weight: active ? .semibold : .medium)
-                        .foregroundStyle(active ? t.ink : (done ? t.muted(0.72) : t.muted(0.45)))
-                    Spacer(minLength: 0)
+                Button { model.jump(to: step) } label: {
+                    HStack(spacing: 10) {
+                        stepDot(index: i, done: done, active: active)
+                        Text(step.title)
+                            .murFont(12.5, weight: active ? .semibold : .medium)
+                            .foregroundStyle(active ? t.ink : (done ? t.muted(0.72) : t.muted(0.45)))
+                        Spacer(minLength: 0)
+                    }
+                    .frame(height: 22)
+                    .contentShape(Rectangle())
                 }
-                .padding(.vertical, 3)
+                .buttonStyle(.plain)
+                .disabled(!done || model.tryListening || model.tryWorking)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Setup steps")
-        .accessibilityValue("Step \(current + 1) of \(labels.count)")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Tour steps")
+        .accessibilityValue("Step \(current + 1) of \(steps.count)")
     }
 
     @ViewBuilder
@@ -210,13 +219,13 @@ struct OnboardingRail: View {
                     done ? Mur.accent : (active ? Mur.accent : t.line(0.18)),
                     lineWidth: active ? 2 : (done ? 1 : 1.5)))
             if done {
-                Text("✓").font(.system(size: 11, weight: .bold)).foregroundStyle(OnTheme.rgb(26, 18, 12))
+                Text(verbatim: "✓").font(.system(size: 10, weight: .bold)).foregroundStyle(OnTheme.rgb(26, 18, 12))
             } else {
-                Text("\(index + 1)").font(.system(size: 12, weight: .semibold))
+                Text(verbatim: "\(index + 1)").font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(active ? Mur.accent : t.muted(0.42))
             }
         }
-        .frame(width: 24, height: 24)
+        .frame(width: 20, height: 20)
     }
 }
 
@@ -228,15 +237,7 @@ struct OnboardingTitleBar: View {
 
     private var t: OnTheme { OnTheme(scheme) }
     private var titleLabel: LocalizedStringKey {
-        if model.finished { return "Done" }
-        switch model.flow.step {
-        case .welcome: return "Welcome"
-        case .permissions: return "Permissions"
-        case .shortcut: return "Shortcut"
-        case .download: return "Download"
-        case .tryIt: return "Try it"
-        case .done: return "Done"
-        }
+        model.finished ? OnboardingFlow.Step.done.title : model.step.title
     }
 
     var body: some View {
@@ -268,23 +269,26 @@ struct OnboardingFooter: View {
 
     /// Continue label per step (mock `contLabels`).
     private var continueLabel: LocalizedStringKey {
-        switch model.flow.step {
+        switch model.step {
         case .welcome: return "Get started"
-        case .permissions, .shortcut: return "Continue"
-        case .download: return model.canContinue ? "Continue" : "Downloading…"
-        case .tryIt: return "I’ve got it"
-        case .done: return "Start using Murmator"
+        case .models: return model.canContinue ? "Continue" : "Preparing…"
+        case .done: return "Finish tour"
+        default: return "Continue"
         }
     }
 
-    /// Hint shown next to a disabled Continue (mock `blockHint`).
-    private var blockHint: LocalizedStringKey? {
-        guard !model.canContinue else { return nil }
-        switch model.flow.step {
-        case .permissions: return "Grant the microphone to continue"
-        case .tryIt: return "Hold the button and speak to try it"
-        default: return nil
+    /// The footer hint. Examples are optional, and the footer says so.
+    private var hint: LocalizedStringKey? {
+        if !model.canContinue {
+            switch model.step {
+            case .microphone: return "Allow the microphone to continue"
+            case .models: return "Continue unlocks when the models are ready"
+            default: return "Finish or cancel the recording first"
+            }
         }
+        if model.step.isExample { return "Trying the example is optional" }
+        if model.step == .done { return "Closing the tour keeps everything you set" }
+        return nil
     }
 
     var body: some View {
@@ -297,12 +301,13 @@ struct OnboardingFooter: View {
                 .buttonStyle(.plain)
             }
             Spacer(minLength: 0)
-            if let hint = blockHint {
-                Text(hint).murFont(12.5).foregroundStyle(t.muted(0.5))
+            if let hint {
+                Text(hint).murFont(12.5).foregroundStyle(t.muted(0.5)).lineLimit(1)
             }
             continueButton
         }
-        .padding(.horizontal, 30).padding(.vertical, 15)
+        .padding(.horizontal, 28)
+        .frame(height: 64)
         .background(t.footer)
         .overlay(alignment: .top) { Rectangle().fill(t.line(0.09)).frame(height: 1) }
     }

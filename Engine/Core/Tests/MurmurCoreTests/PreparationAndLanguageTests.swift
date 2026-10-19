@@ -33,7 +33,7 @@ final class PreparationAndLanguageTests: XCTestCase {
         // must not silently change the selected quality profile.
         XCTAssertEqual(routes.targets(from: "fi"), ["en"])
         XCTAssertEqual(routes.targets(from: "ru"), [])
-        XCTAssertFalse(routes.sources.contains("de"))
+        XCTAssertEqual(routes.sources, ["en", "fi"], "only installed directions offer a source")
     }
     func testSharedSpeechModelListsEnglishAndFinnish() {
         XCTAssertEqual(SpeechModelChoice.languages(forStorageID: "speech/multilingual-accurate", selected: ["ru", "en", "fi"]), ["ru", "en", "fi"])

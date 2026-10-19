@@ -111,16 +111,6 @@
         }
       }
     },
-    "Hi, I’m Murmator! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Привет, я Мурматор! Зажми клавишу, говори — и я печатаю слова прямо там, где курсор. Готовы меня настроить?"
-          }
-        }
-      }
-    },
     "I need two macOS permissions to work. Tap each one — I’ll tell you exactly why.": {
       "localizations": {
         "ru": {
@@ -281,16 +271,6 @@
         }
       }
     },
-    "Start using Murmator": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Начать пользоваться Мурматор"
-          }
-        }
-      }
-    },
     "Grant the microphone to continue": {
       "localizations": {
         "ru": {
@@ -317,16 +297,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Назад"
-          }
-        }
-      }
-    },
-    "Murmator is live": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Мурматор на связи"
           }
         }
       }
@@ -477,16 +447,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Можно начинать говорить"
-          }
-        }
-      }
-    },
-    "Murmator is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Теперь Мурматор тихо живёт в строке меню. Зажмите сочетание в любом приложении и просто говорите — слова появятся прямо там, где курсор."
           }
         }
       }
@@ -891,32 +851,202 @@
         }
       }
     },
-    "Mascot": {
+    "%@ disconnected. System default is used until you pick another input.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Маскот"
+            "value": "%@ отключён. Пока вы не выберете другой вход, используется системный микрофон по умолчанию."
           }
         }
       }
     },
-    "Choose a companion. You can change it anytime.": {
+    "%lld connections": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите спутника. Стиль можно сменить в любой момент."
+            "value": "Подключений: %lld"
           }
         }
       }
     },
-    "Friendly cat": {
+    "A quick draft appears while you speak. Meanwhile a more accurate model refines it phrase by phrase in the background and finishes the last part when you release.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Дружелюбный кот"
+            "value": "Во время речи появляется быстрый черновик. Параллельно более точная модель уточняет его фраза за фразой в фоне и дорабатывает последний фрагмент, когда вы отпускаете кнопку."
+          }
+        }
+      }
+    },
+    "A quick draft, refined phrase by phrase in the background.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрый черновик, который уточняется фраза за фразой в фоне."
+          }
+        }
+      }
+    },
+    "A small pill with level bars; your words appear when you finish.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Небольшая капсула с уровнем звука; слова появятся, когда вы закончите."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О программе"
+          }
+        }
+      }
+    },
+    "About five minutes. Every example is optional.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Около пяти минут. Каждый пример необязателен."
+          }
+        }
+      }
+    },
+    "Accurate": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точный"
+          }
+        }
+      }
+    },
+    "Accurate pass": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точный проход"
+          }
+        }
+      }
+    },
+    "Accurate pass: re-reading the recording…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точный проход: перечитываю запись…"
+          }
+        }
+      }
+    },
+    "Accurate: text after you finish": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точный: текст после того, как вы закончите"
+          }
+        }
+      }
+    },
+    "After recording stops, a local model fixes spelling, grammar and punctuation. It picks its language from the audio, not from your language setting.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "После остановки записи локальная модель исправляет орфографию, грамматику и пунктуацию. Язык она определяет по звуку, а не по настройке языка."
+          }
+        }
+      }
+    },
+    "After you stop, Whisper detects the spoken language and a language model corrects spelling, punctuation and grammar. Your text stays on this Mac. Model loading follows the setting above; the first download takes longer.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "После остановки Whisper определяет язык речи, а языковая модель исправляет орфографию, пунктуацию и грамматику. Текст остаётся на этом Mac. Загрузка моделей зависит от настройки выше; первое скачивание занимает больше времени."
+          }
+        }
+      }
+    },
+    "After you stop, Whisper detects the spoken language and a language model corrects spelling, punctuation and grammar. Your text stays on this Mac. Models download on first use; finishing takes longer.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "После остановки Whisper определит язык, а языковая модель исправит орфографию, пунктуацию и грамматику. Текст останется на этом Mac. Модели скачаются при первом использовании; обработка займёт больше времени."
+          }
+        }
+      }
+    },
+    "Allow": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешить"
+          }
+        }
+      }
+    },
+    "Allow Accessibility to type": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешите Универсальный доступ для печати"
+          }
+        }
+      }
+    },
+    "Allow the microphone to continue": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешите микрофон, чтобы продолжить"
+          }
+        }
+      }
+    },
+    "Allowed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешён"
+          }
+        }
+      }
+    },
+    "Allow…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешить…"
+          }
+        }
+      }
+    },
+    "Applies to all dictation · model in Settings › Post-processing.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Действует на всю диктовку · модель — в «Настройки › Постобработка»."
           }
         }
       }
@@ -931,62 +1061,185 @@
         }
       }
     },
-    "Wizard": {
+    "At launch prepares speech and the enabled corrector in advance and keeps them in memory. On demand prepares them when needed; Murmator shows progress while preparing.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Волшебник"
+            "value": "При запуске модели речи и включённый корректор подготавливаются заранее и остаются в памяти. По требованию они готовятся, когда понадобятся; Murmator показывает ход подготовки."
           }
         }
       }
     },
-    "Gardener": {
+    "At the caret": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Садовник"
+            "value": "У курсора"
           }
         }
       }
     },
-    "Rock star": {
+    "At the caret draws your words where they will be inserted, as they are recognised; nothing is typed until you finish. When the caret is unavailable, your words appear above the compact capsule. Compact shows only the recording status. Full shows your words in a larger pill at the bottom of the screen.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Рок-звезда"
+            "value": "У каретки текст появляется там, куда будет вставлен после окончания диктовки. Если положение каретки недоступно, текст показывается над компактной капсулой. Компактный режим показывает только состояние записи. Полный режим показывает текст в большой капсуле внизу экрана."
           }
         }
       }
     },
-    "Pirate": {
+    "Audio and text never leave this Mac.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Пират"
+            "value": "Звук и текст не покидают этот Mac."
           }
         }
       }
     },
-    "Robot": {
+    "Automatic for detected language": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Робот"
+            "value": "Автоматически по определённому языку"
           }
         }
       }
     },
-    "Sleepy cat": {
+    "Before correction": {
+      "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сонный кот"
+            "value": "До коррекции"
+          }
+        }
+      }
+    },
+    "Build": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сборка"
+          }
+        }
+      }
+    },
+    "Cancel loading": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить загрузку"
+          }
+        }
+      }
+    },
+    "Cancel start": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить запуск"
+          }
+        }
+      }
+    },
+    "Cancelled. Nothing was inserted.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменено. Ничего не вставлено."
+          }
+        }
+      }
+    },
+    "Caption appearance & layout…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вид и расположение субтитров…"
+          }
+        }
+      }
+    },
+    "Captions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Субтитры"
+          }
+        }
+      }
+    },
+    "Choose a companion. You can change it anytime.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите спутника. Стиль можно сменить в любой момент."
+          }
+        }
+      }
+    },
+    "Choose a language to translate to.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите язык перевода."
+          }
+        }
+      }
+    },
+    "Choose a language to try translation.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите язык, чтобы попробовать перевод."
+          }
+        }
+      }
+    },
+    "Choose a translation language, then dictate a sentence.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите язык перевода, затем продиктуйте предложение."
+          }
+        }
+      }
+    },
+    "Choose an input and say a few words. The bars move only when sound actually reaches Murmator.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите вход и скажите несколько слов. Полоски двигаются, только когда звук действительно доходит до Мурматора."
+          }
+        }
+      }
+    },
+    "Choose…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите…"
           }
         }
       }
@@ -1001,42 +1254,407 @@
         }
       }
     },
-    "The original mascot, with its cap and moustache.": {
+    "Classic costume without a moustache.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Прежний маскот с фуражкой и усами."
+            "value": "Классический образ без усов."
           }
         }
       }
     },
-    "Murmator": {
+    "Click in the field, tap right ⌘ and speak. Return inserts the result at the caret; Escape cancels. You can also hold right ⌘ and release to insert.": {
+      "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Мурматор"
+            "value": "Нажмите в поле, затем нажмите правый ⌘ и говорите. Return вставляет результат у каретки, Escape отменяет. Можно также удерживать правый ⌘ и отпустить его для вставки."
           }
         }
       }
     },
-    "Quit Murmator": {
+    "Click in the practice field first, so I know where the text goes.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выйти из Мурматора"
+            "value": "Сначала щёлкни в поле для практики, чтобы я знал, куда ставить текст."
           }
         }
       }
     },
-    "Murmator Setup": {
+    "Click in the practice field first, so I know where to insert.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Настройка Мурматора"
+            "value": "Сначала щёлкните в поле для практики, чтобы было понятно, куда вставлять."
+          }
+        }
+      }
+    },
+    "Click in the text to set the insertion point. Tap right ⌘ once and speak — no need to hold. Return inserts the text there, Escape cancels.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Щёлкните в тексте, чтобы поставить курсор. Нажмите правый ⌘ один раз и говорите — держать не нужно. Return вставит текст туда, Esc отменит."
+          }
+        }
+      }
+    },
+    "Click in the text, then tap right ⌘ · microphone closed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Щёлкните в тексте, затем нажмите правый ⌘ · микрофон закрыт"
+          }
+        }
+      }
+    },
+    "Closing the tour keeps everything you set": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Закрытие тура сохраняет все настройки"
+          }
+        }
+      }
+    },
+    "Closing this window keeps Murmator in the menu bar.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если закрыть это окно, Мурматор останется в строке меню."
+          }
+        }
+      }
+    },
+    "Closing this window keeps dictation running": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если закрыть это окно, диктовка продолжит работать"
+          }
+        }
+      }
+    },
+    "Cloud providers and models for each step": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Облачные провайдеры и модели для каждого шага"
+          }
+        }
+      }
+    },
+    "Compact": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Компактно"
+          }
+        }
+      }
+    },
+    "Connections and models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключения и модели"
+          }
+        }
+      }
+    },
+    "Continue unlocks when the models are ready": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Продолжить» станет доступно, когда модели будут готовы"
+          }
+        }
+      }
+    },
+    "Copy Last Dictation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать последнюю диктовку"
+          }
+        }
+      }
+    },
+    "Correct spelling and grammar after recording": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлять орфографию и грамматику после записи"
+          }
+        }
+      }
+    },
+    "Correct spelling, grammar and punctuation after recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлять орфографию, грамматику и пунктуацию после записи"
+          }
+        }
+      }
+    },
+    "Corrected": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлено"
+          }
+        }
+      }
+    },
+    "Correcting spelling and grammar…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправляю орфографию и грамматику…"
+          }
+        }
+      }
+    },
+    "Correcting spelling and punctuation…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправляю орфографию и пунктуацию…"
+          }
+        }
+      }
+    },
+    "Corrector": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Корректор"
+          }
+        }
+      }
+    },
+    "Corrector is off — the recognized text on the left is what gets typed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Корректор выключен — печатается распознанный текст слева."
+          }
+        }
+      }
+    },
+    "Corrector · off": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Корректор · выкл."
+          }
+        }
+      }
+    },
+    "Could not paste the text. Copy Last Dictation is available in the Murmator menu.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось вставить текст. Его можно скопировать через «Скопировать последнюю диктовку» в меню Murmator."
+          }
+        }
+      }
+    },
+    "Couldn’t prepare %@ from %@. Dictation is typed untranslated for now.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось подготовить перевод на %1$@ с %2$@. Пока диктовка печатается без перевода."
+          }
+        }
+      }
+    },
+    "Couldn’t prepare the speech models. Downloaded files are kept.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось подготовить модели речи. Загруженные файлы сохранены."
+          }
+        }
+      }
+    },
+    "Couldn’t recognize this recording. Nothing was typed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось распознать запись. Ничего не напечатано."
+          }
+        }
+      }
+    },
+    "Couldn’t start this example. Nothing was recorded.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось запустить пример. Ничего не записано."
+          }
+        }
+      }
+    },
+    "Details": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности"
+          }
+        }
+      }
+    },
+    "Detecting the final language…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Определяю язык записи…"
+          }
+        }
+      }
+    },
+    "Detecting the language for the corrector…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Определяю язык для корректора…"
+          }
+        }
+      }
+    },
+    "Dictate and send": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктовать и отправить"
+          }
+        }
+      }
+    },
+    "Dictate where you’re typing": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктуйте туда, где печатаете"
+          }
+        }
+      }
+    },
+    "Dictation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктовка"
+          }
+        }
+      }
+    },
+    "Dictation error": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ошибка диктовки"
+          }
+        }
+      }
+    },
+    "Dictation is off": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктовка выключена"
+          }
+        }
+      }
+    },
+    "Dictation on": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктовка включена"
+          }
+        }
+      }
+    },
+    "Double-tap to start dictation, double-tap again to stop": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дважды коснитесь, чтобы начать диктовку, ещё раз — чтобы остановить"
+          }
+        }
+      }
+    },
+    "Download quality model (%@)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачать модель качества (%@)"
+          }
+        }
+      }
+    },
+    "Downloaded models stay on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загруженные модели остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "Downloading %@ %@ of %@ MB": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка: %1$@, %2$@ из %3$@ МБ"
           }
         }
       }
@@ -1051,6 +1669,16 @@
         }
       }
     },
+    "Everyday mode": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режим на каждый день"
+          }
+        }
+      }
+    },
     "Experimental speech recognition": {
       "localizations": {
         "ru": {
@@ -1061,12 +1689,993 @@
         }
       }
     },
-    "Whistle runs on this Mac and downloads a 17 MB model on first use. Choose English and Fast in the menu to use it.": {
+    "Fast": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Whistle работает на этом Mac и загружает модель размером 17 МБ при первом использовании. Чтобы использовать её, выберите в меню английский язык и режим Fast."
+            "value": "Быстрый"
+          }
+        }
+      }
+    },
+    "Fast draft → Accurate recognition → Optional correction": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрый черновик → Точное распознавание → Корректор"
+          }
+        }
+      }
+    },
+    "Fast live draft, accurate result, then optional correction.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрый живой черновик, точный результат, затем корректор по желанию."
+          }
+        }
+      }
+    },
+    "Fast writes as you talk. It’s quick, and it can mishear — always glance at the text.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Быстрый» пишет прямо во время речи. Это быстро, но бывают ослышки — всегда поглядывай на текст."
+          }
+        }
+      }
+    },
+    "Fast: words while you speak": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрый: слова прямо во время речи"
+          }
+        }
+      }
+    },
+    "Finish or cancel the recording first": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сначала закончите или отмените запись"
+          }
+        }
+      }
+    },
+    "Finish tour": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершить тур"
+          }
+        }
+      }
+    },
+    "Finished in Accurate. Recognition can still make mistakes — read it over.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово в режиме «Точный». Распознавание всё равно может ошибаться — перечитайте текст."
+          }
+        }
+      }
+    },
+    "Finished in Fast. This is what was heard live — check it for misheard words.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово в режиме «Быстрый». Это то, что было услышано вживую, — проверьте, нет ли ослышек."
+          }
+        }
+      }
+    },
+    "Finished without correction — the recognized text is what gets typed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово без исправлений — печатается распознанный текст."
+          }
+        }
+      }
+    },
+    "Finished. Corrections are underlined — compare with the recognized text.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово. Исправления подчёркнуты — сравните с распознанным текстом."
+          }
+        }
+      }
+    },
+    "Finished. The accurate pass replaced the draft; changed words are underlined. Check the result.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово. Точный проход заменил черновик, изменённые слова подчёркнуты. Проверьте результат."
+          }
+        }
+      }
+    },
+    "Finished. The corrector kept the recognized text as it was.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово. Корректор оставил распознанный текст без изменений."
+          }
+        }
+      }
+    },
+    "Finished. Translation is machine-made — check names and numbers.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово. Перевод машинный — проверьте имена и числа."
+          }
+        }
+      }
+    },
+    "Finishing the last words…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дописываю последние слова…"
+          }
+        }
+      }
+    },
+    "Finishing the previous model operation. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершаю предыдущую операцию с моделями. Попробуйте через несколько секунд."
+          }
+        }
+      }
+    },
+    "Finishing…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершаю…"
+          }
+        }
+      }
+    },
+    "Finishing… the text goes in at the insertion point when ready": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершаю… текст встанет в место курсора, когда будет готов"
+          }
+        }
+      }
+    },
+    "First, which microphone should I listen to? Say a few words to test it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сначала — какой микрофон мне слушать? Скажи пару слов, чтобы проверить."
+          }
+        }
+      }
+    },
+    "Fix spelling and punctuation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлять орфографию и пунктуацию"
+          }
+        }
+      }
+    },
+    "Fixes spelling and punctuation after you stop": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправляет орфографию и пунктуацию после остановки"
+          }
+        }
+      }
+    },
+    "Freeing memory…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Освобождение памяти…"
+          }
+        }
+      }
+    },
+    "Freeing model memory…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Освобождение памяти моделей…"
+          }
+        }
+      }
+    },
+    "Friendly cat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дружелюбный кот"
+          }
+        }
+      }
+    },
+    "From": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С языка"
+          }
+        }
+      }
+    },
+    "Full": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полностью"
+          }
+        }
+      }
+    },
+    "Gardener": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Садовник"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основные"
+          }
+        }
+      }
+    },
+    "Getting ready…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готовлюсь…"
+          }
+        }
+      }
+    },
+    "Go to Speech models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "К моделям речи"
+          }
+        }
+      }
+    },
+    "Grant Accessibility…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешить Универсальный доступ…"
+          }
+        }
+      }
+    },
+    "HUD": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Индикатор"
+          }
+        }
+      }
+    },
+    "Hearing you clearly.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слышу вас хорошо."
+          }
+        }
+      }
+    },
+    "Hi, I’m Murmator! Hold a key, talk, and I type the words right where your cursor is. Ready to set me up?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Привет, я Мурматор! Зажми клавишу, говори — и я печатаю слова прямо там, где курсор. Готовы меня настроить?"
+          }
+        }
+      }
+    },
+    "Hi, I’m Murmator. I’ll show you how dictation works, one step at a time.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Привет, я Мурматор. Покажу, как работает диктовка, — шаг за шагом."
+          }
+        }
+      }
+    },
+    "Hide details": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скрыть подробности"
+          }
+        }
+      }
+    },
+    "Hold": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удерживать"
+          }
+        }
+      }
+    },
+    "Hold the button and say a sentence.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зажмите кнопку и скажите фразу."
+          }
+        }
+      }
+    },
+    "Hold the button and say a sentence. Words appear here as you speak.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зажмите кнопку и скажите фразу. Слова появятся здесь по ходу речи."
+          }
+        }
+      }
+    },
+    "Hold the button and talk. Words appear as you speak, and the last few may still change. What you see when you release is the result.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зажмите кнопку и говорите. Слова появляются по ходу речи, последние ещё могут измениться. То, что видно после отпускания, и есть результат."
+          }
+        }
+      }
+    },
+    "Hold the button, say a sentence, then release. Text appears here after you release.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зажмите кнопку, скажите фразу и отпустите. Текст появится здесь после отпускания."
+          }
+        }
+      }
+    },
+    "Hotkey": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сочетание клавиш"
+          }
+        }
+      }
+    },
+    "How Murmator looks and when it gets ready.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как выглядит Мурматор и когда он готовится к работе."
+          }
+        }
+      }
+    },
+    "Hybrid": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Гибридный"
+          }
+        }
+      }
+    },
+    "Hybrid: live draft, then an accurate pass": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Гибридный: живой черновик, затем точный проход"
+          }
+        }
+      }
+    },
+    "I can’t hear anything yet — microphone access is off in System Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я пока ничего не слышу — доступ к микрофону выключен в Системных настройках."
+          }
+        }
+      }
+    },
+    "I need my speech models before I can listen. They stay on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы слушать, мне нужны модели речи. Они остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "If it disconnects, System default is used until it returns.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если он отключится, до его возвращения используется системный микрофон."
+          }
+        }
+      }
+    },
+    "In Accurate I stay quiet while you talk, then write it all at once.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В «Точном» я молчу, пока ты говоришь, а потом пишу всё сразу."
+          }
+        }
+      }
+    },
+    "In memory: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В памяти: %@"
+          }
+        }
+      }
+    },
+    "Input device": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство ввода"
+          }
+        }
+      }
+    },
+    "Input level": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень входа"
+          }
+        }
+      }
+    },
+    "Input level · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень входа · %@"
+          }
+        }
+      }
+    },
+    "Insert or cancel": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вставить или отменить"
+          }
+        }
+      }
+    },
+    "Inserted at the insertion point. Check it, then try again or continue.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вставлено в место курсора. Проверьте текст, затем попробуйте ещё раз или продолжите."
+          }
+        }
+      }
+    },
+    "Keyboard shortcuts": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сочетания клавиш"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Язык"
+          }
+        }
+      }
+    },
+    "Listening": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю"
+          }
+        }
+      }
+    },
+    "Listening for your voice…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Жду вашего голоса…"
+          }
+        }
+      }
+    },
+    "Listening · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю · %@"
+          }
+        }
+      }
+    },
+    "Listening · %@ · Return inserts, Esc cancels": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю · %@ · Return — вставить, Esc — отменить"
+          }
+        }
+      }
+    },
+    "Listening · %@ · release to finish": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю · %@ · отпустите, чтобы закончить"
+          }
+        }
+      }
+    },
+    "Listening. Release the key to finish.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю. Отпустите клавишу, чтобы закончить."
+          }
+        }
+      }
+    },
+    "Listening. Return inserts, Escape cancels.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю. Return — вставить, Escape — отменить."
+          }
+        }
+      }
+    },
+    "Listening. Tap your shortcut again to finish.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю. Нажмите сочетание ещё раз, чтобы закончить."
+          }
+        }
+      }
+    },
+    "Listening… start speaking.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю… начинайте говорить."
+          }
+        }
+      }
+    },
+    "Live dictation": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живая диктовка"
+          }
+        }
+      }
+    },
+    "Live draft": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой черновик"
+          }
+        }
+      }
+    },
+    "Live draft, then an accurate result.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой черновик, затем точный результат."
+          }
+        }
+      }
+    },
+    "Live model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живая модель"
+          }
+        }
+      }
+    },
+    "Live text": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой текст"
+          }
+        }
+      }
+    },
+    "Live text, or more accurate text after you stop.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой текст или более точный текст после остановки."
+          }
+        }
+      }
+    },
+    "Load at launch to be ready for dictation. On demand saves memory until your first dictation; Murmator shows progress while preparing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка при запуске готовит модели к диктовке заранее. Загрузка по требованию экономит память до первой диктовки; Murmator показывает ход подготовки."
+          }
+        }
+      }
+    },
+    "Load models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка моделей"
+          }
+        }
+      }
+    },
+    "Load speech models": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка моделей распознавания"
+          }
+        }
+      }
+    },
+    "Loading didn’t work. Your downloads are kept — try again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка не удалась. Скачанное сохранено — попробуй ещё раз."
+          }
+        }
+      }
+    },
+    "Loading speech model…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка модели речи…"
+          }
+        }
+      }
+    },
+    "Loading text corrector…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка корректора текста…"
+          }
+        }
+      }
+    },
+    "Mascot": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Маскот"
+          }
+        }
+      }
+    },
+    "Meeting notes. We ship the tour on Friday. Then we check the microphone list.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заметки со встречи. Тур выпускаем в пятницу. Потом проверяем список микрофонов."
+          }
+        }
+      }
+    },
+    "Menu bar icon › Setup tour…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значок в строке меню › «Настройка заново…»"
+          }
+        }
+      }
+    },
+    "Mic": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон"
+          }
+        }
+      }
+    },
+    "Microphone access": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ к микрофону"
+          }
+        }
+      }
+    },
+    "Microphone access is off": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ к микрофону выключен"
+          }
+        }
+      }
+    },
+    "Microphone access is off.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ к микрофону выключен."
+          }
+        }
+      }
+    },
+    "Microphone access is off. Turn it on in System Settings › Privacy & Security › Microphone.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ к микрофону выключен. Включите его в «Системные настройки › Конфиденциальность и безопасность › Микрофон»."
+          }
+        }
+      }
+    },
+    "Microphone and Accessibility are allowed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон и Универсальный доступ разрешены."
+          }
+        }
+      }
+    },
+    "Microphone open": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон открыт"
+          }
+        }
+      }
+    },
+    "Microphone open · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон открыт · %@"
+          }
+        }
+      }
+    },
+    "Mode": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режим"
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        }
+      }
+    },
+    "Model loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка моделей"
+          }
+        }
+      }
+    },
+    "Model loading is set in Settings › Model loading.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка моделей настраивается в «Настройки › Загрузка моделей»."
+          }
+        }
+      }
+    },
+    "Models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели"
+          }
+        }
+      }
+    },
+    "Models are not loaded": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели не загружены"
+          }
+        }
+      }
+    },
+    "Models are still loading": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели ещё загружаются"
+          }
+        }
+      }
+    },
+    "Models download once and run on this Mac. Loading puts them in memory so a recording can start right away.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели загружаются один раз и работают на этом Mac. Загрузка в память позволяет начать запись сразу."
+          }
+        }
+      }
+    },
+    "Models ready": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели готовы"
           }
         }
       }
@@ -1077,6 +2686,1775 @@
           "stringUnit": {
             "state": "translated",
             "value": "Усы"
+          }
+        }
+      }
+    },
+    "Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мурматор"
+          }
+        }
+      }
+    },
+    "Murmator Setup": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка Мурматора"
+          }
+        }
+      }
+    },
+    "Murmator Tour": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тур по Мурматору"
+          }
+        }
+      }
+    },
+    "Murmator Window": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Окно Мурматора"
+          }
+        }
+      }
+    },
+    "Murmator can’t hear you until you allow it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мурматор не слышит вас, пока вы не разрешите доступ."
+          }
+        }
+      }
+    },
+    "Murmator is finishing another dictation. Try again in a moment.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мурматор заканчивает другую диктовку. Попробуйте через минуту."
+          }
+        }
+      }
+    },
+    "Murmator is live": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мурматор на связи"
+          }
+        }
+      }
+    },
+    "Murmator is now living quietly in your menu bar. Hold your shortcut in any app and just talk — the words land right where your cursor is.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Теперь Мурматор тихо живёт в строке меню. Зажмите сочетание в любом приложении и просто говорите — слова появятся прямо там, где курсор."
+          }
+        }
+      }
+    },
+    "No changes: the corrector kept the text as recognized.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без изменений: корректор оставил текст как распознан."
+          }
+        }
+      }
+    },
+    "No language chosen: nothing is translated.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Язык не выбран — ничего не переводится."
+          }
+        }
+      }
+    },
+    "No live text in this mode. Recognition starts when you release, so text appears a moment later. Longer recordings take longer.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этом режиме нет живого текста. Распознавание начинается после отпускания кнопки, поэтому текст появляется чуть позже. Чем длиннее запись, тем дольше."
+          }
+        }
+      }
+    },
+    "No model for this pair — dictation is typed untranslated.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для этой пары нет модели — диктовка печатается без перевода."
+          }
+        }
+      }
+    },
+    "No speech was detected. Nothing was typed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Речь не обнаружена. Ничего не напечатано."
+          }
+        }
+      }
+    },
+    "No text from this recording.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этой записи нет текста."
+          }
+        }
+      }
+    },
+    "Not asked yet": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё не запрошен"
+          }
+        }
+      }
+    },
+    "Not used for captions.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не используется в режиме субтитров."
+          }
+        }
+      }
+    },
+    "Nothing is recorded during the microphone test.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Во время проверки микрофона ничего не записывается."
+          }
+        }
+      }
+    },
+    "Nothing you say leaves this Mac unless you pick a cloud step.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ничего из сказанного не покидает этот Mac, пока вы не выберете облачный шаг."
+          }
+        }
+      }
+    },
+    "Now: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сейчас: %@"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выкл."
+          }
+        }
+      }
+    },
+    "Off for everyday dictation — menu bar › Translate to": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключен для обычной диктовки — строка меню › «Перевод на»"
+          }
+        }
+      }
+    },
+    "Off — Settings › Post-processing": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключен — «Настройки › Постобработка»"
+          }
+        }
+      }
+    },
+    "On": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вкл."
+          }
+        }
+      }
+    },
+    "On for all dictation — Settings › Post-processing": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включён для всей диктовки — «Настройки › Постобработка»"
+          }
+        }
+      }
+    },
+    "On-device dictation and translation.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диктовка и перевод прямо на устройстве."
+          }
+        }
+      }
+    },
+    "On-screen": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На экране"
+          }
+        }
+      }
+    },
+    "Only for this example.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только для этого примера."
+          }
+        }
+      }
+    },
+    "Open Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть Murmator"
+          }
+        }
+      }
+    },
+    "Open Murmator Window": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть окно Мурматора"
+          }
+        }
+      }
+    },
+    "Open System Settings…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть Системные настройки…"
+          }
+        }
+      }
+    },
+    "Opening %@… not listening yet": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открываю %@… пока не слушаю"
+          }
+        }
+      }
+    },
+    "Opening mic…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открываю микрофон…"
+          }
+        }
+      }
+    },
+    "Opening the microphone… keep holding.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открываю микрофон… продолжайте держать."
+          }
+        }
+      }
+    },
+    "Optional cloud models. Local stays the default for every step.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Облачные модели по желанию. По умолчанию каждый шаг выполняется локально."
+          }
+        }
+      }
+    },
+    "Optional corrector": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необязательный корректор"
+          }
+        }
+      }
+    },
+    "Optional. Downloads the first time you switch it on.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необязателен. Загружается при первом включении."
+          }
+        }
+      }
+    },
+    "Or hold right ⌘: talk while holding, release inserts.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Или удерживайте правый ⌘: говорите, пока держите, — отпускание вставит текст."
+          }
+        }
+      }
+    },
+    "Output": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вывод"
+          }
+        }
+      }
+    },
+    "Pick a language pair and speak. The recognized text and its translation appear side by side. Both stay on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите пару языков и говорите. Распознанный текст и перевод появятся рядом. Оба остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "Pick a language pair and speak. You get both texts side by side.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбери пару языков и говори. Оба текста будут рядом."
+          }
+        }
+      }
+    },
+    "Pick a mode": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите режим"
+          }
+        }
+      }
+    },
+    "Pick the microphone I listen to": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите микрофон"
+          }
+        }
+      }
+    },
+    "Pick the mode for everyday dictation. Everything here can be changed later from the menu bar.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите режим для обычной диктовки. Всё это можно изменить позже в строке меню."
+          }
+        }
+      }
+    },
+    "Pirate": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пират"
+          }
+        }
+      }
+    },
+    "Post-process after recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Постобработка после записи"
+          }
+        }
+      }
+    },
+    "Post-processing": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Постобработка"
+          }
+        }
+      }
+    },
+    "Practice field": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поле для практики"
+          }
+        }
+      }
+    },
+    "Prepare speech recognition": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовьте распознавание речи"
+          }
+        }
+      }
+    },
+    "Preparing models…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка моделей…"
+          }
+        }
+      }
+    },
+    "Preparing speech models…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка моделей речи…"
+          }
+        }
+      }
+    },
+    "Preparing translation…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка перевода…"
+          }
+        }
+      }
+    },
+    "Preparing…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка…"
+          }
+        }
+      }
+    },
+    "Press Test microphone and say a few words.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите «Проверить микрофон» и скажите несколько слов."
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Конфиденциальность"
+          }
+        }
+      }
+    },
+    "Providers": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдеры"
+          }
+        }
+      }
+    },
+    "Push-to-talk": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удерживать и говорить"
+          }
+        }
+      }
+    },
+    "Quality model installed — typed text uses it automatically.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель качества установлена — печатаемый текст использует её автоматически."
+          }
+        }
+      }
+    },
+    "Quit Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти из Мурматора"
+          }
+        }
+      }
+    },
+    "Ready to dictate": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Всё готово к диктовке"
+          }
+        }
+      }
+    },
+    "Ready · %@ · %@ · microphone closed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово · %1$@ · %2$@ · микрофон закрыт"
+          }
+        }
+      }
+    },
+    "Recognition on this Mac and the pass that fixes the final text.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание на этом Mac и проход, который исправляет итоговый текст."
+          }
+        }
+      }
+    },
+    "Recognized": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознано"
+          }
+        }
+      }
+    },
+    "Recognizing the recording…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознаю запись…"
+          }
+        }
+      }
+    },
+    "Recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись"
+          }
+        }
+      }
+    },
+    "Recording. Accurate shows no words while you speak — text appears after you release.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идёт запись. В режиме «Точный» слова во время речи не показываются — текст появится после отпускания кнопки."
+          }
+        }
+      }
+    },
+    "Refines phrases in Hybrid; recognizes the recording in Accurate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Hybrid уточняет фразы; в Accurate распознаёт запись."
+          }
+        }
+      }
+    },
+    "Refining the transcript…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уточняю распознанный текст…"
+          }
+        }
+      }
+    },
+    "Release to finish": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отпустите, чтобы закончить"
+          }
+        }
+      }
+    },
+    "Released too early — nothing was recorded. Hold until the status says Listening.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кнопка отпущена слишком рано — ничего не записано. Держите, пока в статусе не появится «Слушаю»."
+          }
+        }
+      }
+    },
+    "Respond to the shortcuts": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Реагировать на сочетания клавиш"
+          }
+        }
+      }
+    },
+    "Return inserts, Esc cancels. Hold to talk, release to insert.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return вставляет, Esc отменяет. Удерживайте, чтобы говорить, отпустите — текст вставится."
+          }
+        }
+      }
+    },
+    "Return types the text, Escape throws it away.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return печатает текст, Esc его отбрасывает."
+          }
+        }
+      }
+    },
+    "Right ⌘": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый ⌘"
+          }
+        }
+      }
+    },
+    "Right ⌘ and the caret preview need Accessibility access.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для правого ⌘ и живого текста у каретки нужен доступ к Универсальному доступу."
+          }
+        }
+      }
+    },
+    "Right ⌘ is off in Settings › Shortcut.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый ⌘ выключен в «Настройки › Сочетание клавиш»."
+          }
+        }
+      }
+    },
+    "Right ⌘ is taught on the At the caret step.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый ⌘ разбирается на шаге «У курсора»."
+          }
+        }
+      }
+    },
+    "Right ⌘ needs Accessibility access to work in any app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы правый ⌘ работал в любом приложении, нужен доступ к Универсальному доступу."
+          }
+        }
+      }
+    },
+    "Right ⌘ received · opening the microphone · Esc cancels": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый ⌘ нажат · открываю микрофон · Esc — отменить"
+          }
+        }
+      }
+    },
+    "Robot": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Робот"
+          }
+        }
+      }
+    },
+    "Rock star": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рок-звезда"
+          }
+        }
+      }
+    },
+    "Routed through English, which costs a second model and some accuracy.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевод идёт через английский — это вторая модель и немного меньше точность."
+          }
+        }
+      }
+    },
+    "Runs after you stop, in every dictation mode.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работает после остановки во всех режимах диктовки."
+          }
+        }
+      }
+    },
+    "Same switch as Settings › Post-processing — applies to all dictation.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тот же переключатель, что в «Настройки › Постобработка», — действует на всю диктовку."
+          }
+        }
+      }
+    },
+    "Saved display (not connected)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранённый дисплей (не подключён)"
+          }
+        }
+      }
+    },
+    "Screen with cursor": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экран с курсором"
+          }
+        }
+      }
+    },
+    "Selected: %@ · microphone closed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбран: %@ · микрофон закрыт"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки"
+          }
+        }
+      }
+    },
+    "Settings sections": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разделы настроек"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки…"
+          }
+        }
+      }
+    },
+    "Share anonymous usage & crash reports — never your audio or transcripts. Optional, change anytime in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправлять анонимную статистику и отчёты о сбоях — без вашего звука и текстов. Необязательно, можно изменить в Настройках."
+          }
+        }
+      }
+    },
+    "Shortcut and display": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сочетание клавиш и отображение"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сочетания клавиш"
+          }
+        }
+      }
+    },
+    "Show": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать"
+          }
+        }
+      }
+    },
+    "Show Tour": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать тур"
+          }
+        }
+      }
+    },
+    "Show on": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать на"
+          }
+        }
+      }
+    },
+    "Sleepy cat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сонный кот"
+          }
+        }
+      }
+    },
+    "Something went wrong. Nothing was typed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что-то пошло не так. Ничего не напечатано."
+          }
+        }
+      }
+    },
+    "Speech": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание"
+          }
+        }
+      }
+    },
+    "Speech & corrector": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание и корректор"
+          }
+        }
+      }
+    },
+    "Speech models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели речи"
+          }
+        }
+      }
+    },
+    "Speech models aren’t ready yet.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели речи ещё не готовы."
+          }
+        }
+      }
+    },
+    "Speech models ready": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели речи готовы"
+          }
+        }
+      }
+    },
+    "Speech models ready. Recording can start right away.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели речи готовы. Запись может начаться сразу."
+          }
+        }
+      }
+    },
+    "Start above or tap the shortcut; the same again stops. Nothing is typed into other apps.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запустите кнопкой выше или сочетанием клавиш; повторное нажатие останавливает. В другие приложения ничего не печатается."
+          }
+        }
+      }
+    },
+    "Start captions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать субтитры"
+          }
+        }
+      }
+    },
+    "Start dictating in any app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начните диктовку в любом приложении."
+          }
+        }
+      }
+    },
+    "Start dictation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать диктовку"
+          }
+        }
+      }
+    },
+    "Start using Murmator": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать пользоваться Мурматор"
+          }
+        }
+      }
+    },
+    "Starting microphone…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запуск микрофона…"
+          }
+        }
+      }
+    },
+    "Step %lld of %lld": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Шаг %1$lld из %2$lld"
+          }
+        }
+      }
+    },
+    "Still finishing…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё заканчиваю…"
+          }
+        }
+      }
+    },
+    "Still getting ready…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё готовлюсь…"
+          }
+        }
+      }
+    },
+    "Stop captions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить субтитры"
+          }
+        }
+      }
+    },
+    "Stop dictation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить диктовку"
+          }
+        }
+      }
+    },
+    "Stop test": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить проверку"
+          }
+        }
+      }
+    },
+    "System default": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Системный по умолчанию"
+          }
+        }
+      }
+    },
+    "Tap right ⌘": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите правый ⌘"
+          }
+        }
+      }
+    },
+    "Tap right ⌘ to dictate at the caret · hold it to talk, release to insert": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите правый ⌘, чтобы диктовать у курсора · удерживайте, чтобы говорить, отпустите — вставится"
+          }
+        }
+      }
+    },
+    "Tap right ⌘: dictate at the caret (Return inserts, Esc cancels) · Hold: talk, release inserts.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите правый ⌘: диктовка у курсора (Return вставляет, Esc отменяет) · Удерживайте: говорите, отпустите — вставится."
+          }
+        }
+      }
+    },
+    "Tap to dictate at the caret": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите, чтобы диктовать у курсора"
+          }
+        }
+      }
+    },
+    "Test microphone": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить микрофон"
+          }
+        }
+      }
+    },
+    "Text after you finish; no live draft.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст после окончания; без живого черновика."
+          }
+        }
+      }
+    },
+    "Text appears after you stop; most accurate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст появляется после остановки; самый точный режим."
+          }
+        }
+      }
+    },
+    "Text appears as you speak.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст появляется по ходу речи."
+          }
+        }
+      }
+    },
+    "Text editing model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель редактирования текста"
+          }
+        }
+      }
+    },
+    "Text while you speak; least accurate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст во время речи; наименее точный."
+          }
+        }
+      }
+    },
+    "That didn’t work. Nothing is lost — read the message below and try again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не получилось. Ничего не потеряно — прочитай сообщение внизу и попробуй ещё раз."
+          }
+        }
+      }
+    },
+    "That display is not connected, so captions appear on the screen with the cursor.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот дисплей не подключён, поэтому субтитры показываются на экране с курсором."
+          }
+        }
+      }
+    },
+    "That input didn’t open. Pick another one and test again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот вход не открылся. Выбери другой и проверь ещё раз."
+          }
+        }
+      }
+    },
+    "That’s the tour. Pick your everyday mode, and reopen this tour any time from the menu.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вот и весь тур. Выбери режим на каждый день, а тур можно открыть снова из меню."
+          }
+        }
+      }
+    },
+    "The %@ translation appears here after recognition finishes.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевод (%@) появится здесь после распознавания."
+          }
+        }
+      }
+    },
+    "The corrected text appears here after you stop recording. Changed words are underlined.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправленный текст появится здесь после остановки записи. Изменённые слова будут подчёркнуты."
+          }
+        }
+      }
+    },
+    "The corrector downloads on first use. Your text stays on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель корректора скачивается при первом использовании. Текст остаётся на этом Mac."
+          }
+        }
+      }
+    },
+    "The corrector tidies spelling and punctuation after you stop. Compare both sides.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Корректор поправляет орфографию и пунктуацию после остановки. Сравни обе стороны."
+          }
+        }
+      }
+    },
+    "The live draft is unreliable in this language, so only the accurate pass runs.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой черновик в этом языке ненадёжен, поэтому работает только точный проход."
+          }
+        }
+      }
+    },
+    "The original mascot, with its cap and moustache.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прежний маскот с фуражкой и усами."
+          }
+        }
+      }
+    },
+    "The selected microphone": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбранный микрофон"
+          }
+        }
+      }
+    },
+    "This example uses %@. It doesn’t change your everyday mode — you pick that at the end.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этом примере используется режим «%@». Он не меняет режим для обычной диктовки — его вы выберете в конце."
+          }
+        }
+      }
+    },
+    "This input didn’t open. Pick another one.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот вход не открылся. Выберите другой."
+          }
+        }
+      }
+    },
+    "This pair didn’t translate. The recognized text is kept.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевести не удалось. Распознанный текст сохранён."
+          }
+        }
+      }
+    },
+    "This pair didn’t translate. The recognized text on the left is kept. Try again, or pick another pair.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевести не удалось. Распознанный текст слева сохранён. Попробуйте ещё раз или выберите другую пару."
+          }
+        }
+      }
+    },
+    "This time the text goes where your insertion point is — just like in any other app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Теперь текст попадёт туда, где стоит курсор, — как в любом другом приложении."
+          }
+        }
+      }
+    },
+    "This tour": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот тур"
+          }
+        }
+      }
+    },
+    "This tour teaches the real app, one action per step. Everything runs on your Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот тур учит работе с настоящим приложением — по одному действию на шаг. Всё работает на вашем Mac."
+          }
+        }
+      }
+    },
+    "To": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На язык"
+          }
+        }
+      }
+    },
+    "Toggle": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переключать"
+          }
+        }
+      }
+    },
+    "Tour": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тур"
+          }
+        }
+      }
+    },
+    "Tour guide": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки тура"
+          }
+        }
+      }
+    },
+    "Tour steps": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Шаги тура"
+          }
+        }
+      }
+    },
+    "Translate to": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевод на"
+          }
+        }
+      }
+    },
+    "Translate what you said": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переведите сказанное"
+          }
+        }
+      }
+    },
+    "Translating to %@…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевожу: %@…"
+          }
+        }
+      }
+    },
+    "Translation": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевод"
+          }
+        }
+      }
+    },
+    "Translation needs a chosen language: automatic detection doesn’t say which one it heard.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для перевода выберите язык: автоопределение не сообщает, какой язык услышало."
+          }
+        }
+      }
+    },
+    "Translation pairs list only what is installed and verified.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В списке пар перевода — только установленные и проверенные."
+          }
+        }
+      }
+    },
+    "Translation stays off for everyday dictation unless you turn it on.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для обычной диктовки перевод выключен, пока вы его не включите."
+          }
+        }
+      }
+    },
+    "Translation · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевод · %@"
+          }
+        }
+      }
+    },
+    "Try dictation at the caret": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Попробуйте диктовку по каретке"
+          }
+        }
+      }
+    },
+    "Try right ⌘ at the caret": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Попробуйте правый ⌘ у каретки"
+          }
+        }
+      }
+    },
+    "Trying the example is optional": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пробовать пример не обязательно"
+          }
+        }
+      }
+    },
+    "Typed where you dictate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Печатается там, где вы диктуете."
+          }
+        }
+      }
+    },
+    "Typing into other apps needs Accessibility — grant it from the menu later.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для печати в другие приложения нужен Универсальный доступ — его можно дать позже из меню."
+          }
+        }
+      }
+    },
+    "Unload": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выгрузить"
+          }
+        }
+      }
+    },
+    "Unloads models from memory. Downloaded files stay on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выгружает модели из памяти. Загруженные файлы остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "Usage": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Использование"
+          }
+        }
+      }
+    },
+    "Version": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия"
+          }
+        }
+      }
+    },
+    "Waiting for right ⌘": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Жду правый ⌘"
+          }
+        }
+      }
+    },
+    "Warming up recognition…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка распознавания…"
+          }
+        }
+      }
+    },
+    "Watch the draft get refined as you speak. Letting go finishes the last phrase.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Черновик уточняется, пока вы говорите. Когда отпустите кнопку, будет доработана последняя фраза."
+          }
+        }
+      }
+    },
+    "Watch the fast draft appear while you speak, then the accurate result. Turn on the corrector to finish spelling, punctuation and grammar.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока вы говорите, появляется быстрый черновик, затем — точный результат. Включите корректор для исправления орфографии, пунктуации и грамматики."
+          }
+        }
+      }
+    },
+    "Ways to start a dictation without the mouse.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Способы начать диктовку без мыши."
+          }
+        }
+      }
+    },
+    "What you see while you speak.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что вы видите, пока говорите."
+          }
+        }
+      }
+    },
+    "When Murmator starts": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При запуске Murmator"
+          }
+        }
+      }
+    },
+    "When dictation starts": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При первой диктовке"
+          }
+        }
+      }
+    },
+    "While you speak": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока вы говорите"
+          }
+        }
+      }
+    },
+    "Whistle runs on this Mac and downloads a 17 MB model on first use. Choose English and Fast in the menu to use it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whistle работает на этом Mac и загружает модель размером 17 МБ при первом использовании. Чтобы использовать её, выберите в меню английский язык и режим Fast."
           }
         }
       }
@@ -1101,142 +4479,394 @@
         }
       }
     },
-    "Classic costume without a moustache.": {
+    "Without it, the text is copied for you to paste.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Классический образ без усов."
+            "value": "Без него текст копируется, чтобы вы вставили его сами."
           }
         }
       }
     },
-    "Freeing model memory…": {
+    "Wizard": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Освобождение памяти моделей…"
+            "value": "Волшебник"
           }
         }
       }
     },
-    "Freeing memory…": {
+    "Words appear at the insertion point; apps that don’t report it get the compact pill.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Освобождение памяти…"
+            "value": "Слова появляются в месте вставки; для приложений, которые его не сообщают, — компактная капсула."
           }
         }
       }
     },
-    "Models are not loaded": {
+    "Words appear at the insertion point; when it is unavailable, your draft appears above the compact pill.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Модели не загружены"
+            "value": "Текст появляется у каретки. Если её положение недоступно, черновик показывается над компактной капсулой."
           }
         }
       }
     },
-    "Starting microphone…": {
+    "Working…": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Запуск микрофона…"
+            "value": "Обработка…"
           }
         }
       }
     },
-    "Loading speech model…": {
+    "Writes words while you speak. Used by Fast and for the Hybrid draft.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Загрузка модели речи…"
+            "value": "Пишет слова во время речи. Используется в режиме «Быстрый» и для черновика в «Гибридном»."
           }
         }
       }
     },
-    "Preparing models…": {
+    "Your choice here is the same Microphone setting as in the menu bar.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Подготовка моделей…"
+            "value": "Выбор здесь — та же настройка «Микрофон», что и в строке меню."
           }
         }
       }
     },
-    "Warming up recognition…": {
+    "Your choices also apply to dictation outside this tour.": {
+      "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Подготовка распознавания…"
+            "value": "Эти настройки также действуют при обычной диктовке."
           }
         }
       }
     },
-    "Cancel start": {
+    "Your microphone went away. Recordings use the system default until you pick another.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Отменить запуск"
+            "value": "Твой микрофон отключился. Пока не выберешь другой, я записываю с системного."
           }
         }
       }
     },
-    "Cancel loading": {
+    "Your turn! Try the live draft, translation and optional corrector. Click in the field and tap right ⌘ to dictate at the caret.": {
+      "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Отменить загрузку"
+            "value": "Ваша очередь! Попробуйте живой черновик, перевод и корректор. Нажмите в поле и нажмите правый ⌘ для диктовки у каретки."
           }
         }
       }
     },
-    "Load models": {
+    "Your words in a larger pill at the bottom of the screen.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Загрузить модели"
+            "value": "Ваши слова в большой капсуле внизу экрана."
           }
         }
       }
     },
-    "In memory: %@": {
+    "a real text field; nothing leaves this window": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "В памяти: %@"
+            "value": "настоящее текстовое поле; ничего не покидает это окно"
           }
         }
       }
     },
-    "Unload": {
+    "cancel": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выгрузить"
+            "value": "отменить"
           }
         }
       }
     },
-    "Unloads models from memory. Downloaded files stay on this Mac.": {
+    "insert": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выгружает модели из памяти. Загруженные файлы остаются на этом Mac."
+            "value": "вставить"
+          }
+        }
+      }
+    },
+    "quality model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель качества"
+          }
+        }
+      }
+    },
+    "tap · start": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нажать · начать"
+          }
+        }
+      }
+    },
+    "translation model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель перевода"
+          }
+        }
+      }
+    },
+    "Whisper detects the spoken language after recording. The chosen model then corrects the final text. Local models download on first use; cloud models need a connection in Providers.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whisper определяет язык речи после записи. Затем выбранная модель исправляет итоговый текст. Локальные модели загружаются при первом использовании; для облачных нужно подключение в разделе «Провайдеры»."
+          }
+        }
+      }
+    },
+    "Corrector model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель корректора"
+          }
+        }
+      }
+    },
+    "Local model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Локальная модель"
+          }
+        }
+      }
+    },
+    "Choose who runs each step: this Mac or one of your connections.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, кто выполняет каждый шаг: этот Mac или одно из ваших подключений."
+          }
+        }
+      }
+    },
+    "Where cloud models come from. Each connection keeps its own key.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откуда берутся облачные модели. У каждого подключения свой ключ."
+          }
+        }
+      }
+    },
+    "Live recognition": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живое распознавание"
+          }
+        }
+      }
+    },
+    "Accurate recognition": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точное распознавание"
+          }
+        }
+      }
+    },
+    "Connections": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключения"
+          }
+        }
+      }
+    },
+    "English Fast": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English Fast"
+          }
+        }
+      }
+    },
+    "Nemotron on this Mac": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nemotron на этом Mac"
+          }
+        }
+      }
+    },
+    "Fast and Hybrid. Some languages skip the live draft.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast и Hybrid. Для некоторых языков живой черновик не показывается."
+          }
+        }
+      }
+    },
+    "Parakeet on this Mac": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parakeet на этом Mac"
+          }
+        }
+      }
+    },
+    "Hybrid and Accurate. Languages Parakeet doesn’t cover use Whisper.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid и Accurate. Для языков, которых нет в Parakeet, используется Whisper."
+          }
+        }
+      }
+    },
+    "On this Mac": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На этом Mac"
+          }
+        }
+      }
+    },
+    "Language packs download on first use.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Языковые пакеты загружаются при первом использовании."
+          }
+        }
+      }
+    },
+    "Automatic for the spoken language": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически по языку речи"
+          }
+        }
+      }
+    },
+    "the detected language": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "определённого языка"
+          }
+        }
+      }
+    },
+    "Hybrid and Accurate. Now %@ for %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid и Accurate. Сейчас %1$@ для языка: %2$@."
+          }
+        }
+      }
+    },
+    "Applies to all dictation · model in Settings › Models.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Действует на всю диктовку · модель — в «Настройки › Модели»."
+          }
+        }
+      }
+    },
+    "Off — Settings › Models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключен — «Настройки › Модели»"
+          }
+        }
+      }
+    },
+    "On for all dictation — Settings › Models": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включён для всей диктовки — «Настройки › Модели»"
+          }
+        }
+      }
+    },
+    "Same switch as Settings › Models — applies to all dictation.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тот же переключатель, что в «Настройки › Модели», — действует на всю диктовку."
           }
         }
       }

@@ -5,6 +5,68 @@ import MurmurTranslation
 @testable import MurmurSession
 
 @MainActor final class RecordingSessionTests: XCTestCase {
+    func testSkipBeforeFinalRecognitionDoesNotStartTheCorrector() async throws {
+        let speech = FakeSpeech(), processor = FakePostProcessor()
+        speech.finalSnapshot = snapshot("Final recognized words")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: FakeTranslation(), postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "en", mode: .fast), postProcessing: true))
+        try await session.start(microphoneUID: nil)
+        session.skipPostProcessing()
+        let result = try await session.stop()
+        XCTAssertEqual(result.text, "Final recognized words")
+        XCTAssertEqual(processor.processCount, 0)
+        XCTAssertNil(result.postProcessingModelID)
+    }
+
+    func testSkipCancelsEditingReturnsSourceAndDoesNotDisableTheNextTake() async throws {
+        let speech = FakeSpeech(), processor = FakePostProcessor()
+        speech.finalSnapshot = snapshot("Original words")
+        var edited = RecordingTranscript()
+        edited.appendSettled(.init(id: 1, startSample: 0, endSample: 16_000, text: "Edited words."))
+        processor.output = .init(language: "en", modelID: "test-editor", transcript: edited)
+        processor.processDelay = .seconds(1)
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: FakeTranslation(), postProcessor: processor)
+        let config = RecordingSession.Configuration(profile: try .resolve(language: "en", mode: .fast), postProcessing: true)
+        var failures: [RecordingSession.Failure] = []
+        session.onEvent = { if case .failure(let failure) = $0 { failures.append(failure) } }
+        try await session.prepare(config)
+        try await session.start(microphoneUID: nil)
+        let stop = Task { try await session.stop() }
+        await until { processor.processCount == 1 }
+        let start = Date()
+        session.skipPostProcessing()
+        let result = try await stop.value
+        XCTAssertLessThan(Date().timeIntervalSince(start), 0.5)
+        XCTAssertEqual(result.text, "Original words")
+        XCTAssertNil(result.postProcessingModelID)
+        XCTAssertEqual(processor.cancelledProcesses, 1)
+        XCTAssertTrue(failures.isEmpty)
+        processor.processDelay = nil
+        try await session.prepare(config)
+        try await session.start(microphoneUID: nil)
+        let second = try await session.stop()
+        XCTAssertEqual(second.text, "Edited words.")
+        XCTAssertEqual(second.postProcessingModelID, "test-editor")
+    }
+
+    func testSkipRejectsAnEditorResultThatArrivesAfterCancellation() async throws {
+        let speech = FakeSpeech(), processor = FakePostProcessor(), gate = Gate()
+        speech.finalSnapshot = snapshot("Original words")
+        var edited = RecordingTranscript()
+        edited.appendSettled(.init(id: 1, startSample: 0, endSample: 16_000, text: "Late rewritten words."))
+        processor.output = .init(language: "en", modelID: "late-editor", transcript: edited)
+        processor.processGate = gate
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: FakeTranslation(), postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "en", mode: .fast), postProcessing: true))
+        try await session.start(microphoneUID: nil)
+        let stop = Task { try await session.stop() }
+        await until { gate.waiting }
+        session.skipPostProcessing()
+        gate.open()
+        let result = try await stop.value
+        XCTAssertEqual(result.text, "Original words")
+        XCTAssertNil(result.postProcessingModelID)
+    }
     private func configuration(target: String? = "en") throws -> RecordingSession.Configuration {
         .init(profile: try .resolve(language: "ru", mode: .hybrid), target: target)
     }
@@ -18,6 +80,174 @@ import MurmurTranslation
     }
     private func make(_ speech: FakeSpeech, _ translation: FakeTranslation) -> RecordingSession {
         .init(makeSpeech: { _ in speech }, translator: translation)
+    }
+
+    func testPostProcessingOffDoesNotPrepareOrRetainAudioForEditing() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        var stages: [RecordingSession.FinishingStage] = []
+        session.onEvent = { if case .finishing(let stage) = $0 { stages.append(stage) } }
+        try await session.prepare(configuration(target: nil))
+        try await session.start(microphoneUID: nil)
+        XCTAssertNil(speech.recordingURL)
+        _ = try await session.stop()
+        XCTAssertEqual(processor.prepareCount, 0)
+        XCTAssertEqual(processor.processCount, 0)
+        XCTAssertEqual(stages, [.recognition])
+    }
+
+    func testWarmCorrectorIsPreparedBeforeCaptureAndReleasedOnlyWhenModelsAreUnloaded() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        speech.finalSnapshot = snapshot("recognized words")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "ru", mode: .hybrid),
+                                       postProcessing: true, postProcessingModelID: "sageLarge", preloadPostProcessing: true))
+        XCTAssertEqual(processor.preloadedLanguages, ["ru"])
+        XCTAssertEqual(processor.preloadedModels, ["sageLarge"])
+        try await session.start(microphoneUID: nil)
+        let result = try await session.stop()
+        XCTAssertEqual(result.text, "recognized words")
+        XCTAssertEqual(processor.closeCount, 0)
+        XCTAssertEqual(processor.detectorReleaseCount, 1)
+        XCTAssertEqual(speech.closeCount, 0)
+        XCTAssertTrue(session.isPrepared)
+        await session.unload()
+        XCTAssertEqual(processor.closeCount, 1)
+        XCTAssertEqual(speech.closeCount, 1)
+    }
+
+    func testAnOptionalCorrectorPreloadFailureDoesNotPreventRecording() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        processor.failPreload = true
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "ru", mode: .fast),
+                                       postProcessing: true, preloadPostProcessing: true))
+        try await session.start(microphoneUID: nil)
+        XCTAssertEqual(speech.startCount, 1)
+        _ = try await session.stop()
+    }
+
+    func testOptionalLanguageDetectorPreparationFailureKeepsRecordingAndOriginalTextAvailable() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        processor.failPrepare = true
+        processor.failProcess = true
+        speech.finalSnapshot = snapshot("recognized words")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "ru", mode: .fast),
+                                       postProcessing: true, preloadPostProcessing: true))
+        try await session.start(microphoneUID: nil)
+        let result = try await session.stop()
+        XCTAssertEqual(speech.startCount, 1)
+        XCTAssertEqual(result.text, "recognized words")
+        XCTAssertTrue(session.isPrepared)
+        await session.unload()
+    }
+
+    func testWhisperLanguageAndEditedTextBecomeTheFinalTranslationSource() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        var edited = RecordingTranscript()
+        edited.appendSettled(.init(id: 1, startSample: 0, endSample: 16_000, text: "Hei, Helsinki!"))
+        edited.finish(fallback: "", endSample: 32_000)
+        processor.output = .init(language: "fi", modelID: "selected-llm", transcript: edited)
+        speech.finalSnapshot = snapshot("hei helsinki")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        var stages: [RecordingSession.FinishingStage] = []
+        session.onEvent = { if case .finishing(let stage) = $0 { stages.append(stage) } }
+        try await session.prepare(.init(profile: try .resolve(language: "ru", mode: .fast), target: "en",
+                                       postProcessing: true, postProcessingModelID: "automatic"))
+        try await session.start(microphoneUID: nil)
+        let url = try XCTUnwrap(speech.recordingURL)
+        try Data("temporary test audio".utf8).write(to: url)
+        let result = try await session.stopSource()
+        XCTAssertEqual(result.text, "Hei, Helsinki!")
+        XCTAssertEqual(result.sourceLanguage, "fi")
+        XCTAssertEqual(result.postProcessingModelID, "selected-llm")
+        XCTAssertEqual(stages, [.recognition, .languageDetection, .textEditing])
+        XCTAssertEqual(result.originalTranscript?.text, "hei helsinki")
+        XCTAssertEqual(processor.receivedTranscript?.text, "hei helsinki")
+        XCTAssertEqual(processor.receivedModelID, "automatic")
+        XCTAssertEqual(speech.closeCount, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        _ = try await session.finishTranslation()
+        XCTAssertEqual(translation.finishSources.last, "fi")
+        XCTAssertEqual(translation.preparedSources.last, "fi")
+        XCTAssertEqual(session.transcript.translatedText, "en:Hei, Helsinki!")
+        try await session.prepare(configuration(target: nil))
+        XCTAssertTrue(session.isPrepared)
+    }
+
+    func testOptionalEditorFailureKeepsTheFinishedOriginalAndUserRecording() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        processor.failProcess = true
+        speech.finalSnapshot = snapshot("unchanged original")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "en", mode: .fast), postProcessing: true))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
+        try Data("saved audio".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await session.start(microphoneUID: nil, recordingURL: url)
+        let result = try await session.stop()
+        XCTAssertEqual(result.text, "unchanged original")
+        XCTAssertEqual(result.sourceLanguage, "en")
+        XCTAssertNil(result.postProcessingModelID)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    func testRejectedCorrectionDoesNotEmitADictationFailureAndTheNextRecordingWorks() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation()
+        speech.finalSnapshot = snapshot("hello there")
+        let processor = SessionPostProcessor(detector: FakeLanguageDetector(), editor: RejectingTextEditor())
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        var failures: [RecordingSession.Failure] = []
+        session.onEvent = { if case .failure(let failure) = $0 { failures.append(failure) } }
+        let config = RecordingSession.Configuration(profile: try .resolve(language: "ru", mode: .hybrid), postProcessing: true)
+        try await session.prepare(config)
+        try await session.start(microphoneUID: nil)
+        let first = try await session.stop()
+        XCTAssertEqual(first.text, "hello there")
+        XCTAssertNil(first.postProcessingModelID)
+        XCTAssertTrue(failures.isEmpty)
+        try await session.prepare(config)
+        try await session.start(microphoneUID: nil)
+        let second = try await session.stop()
+        XCTAssertEqual(second.text, "Hello There.")
+        XCTAssertEqual(second.postProcessingModelID, "fake-provider")
+        XCTAssertTrue(failures.isEmpty)
+    }
+
+    func testCancellationDrainsEditorBeforeCleanupAndRejectsLateOutput() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor(), gate = Gate()
+        processor.processGate = gate
+        speech.finalSnapshot = snapshot("original")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "en", mode: .fast), postProcessing: true))
+        try await session.start(microphoneUID: nil)
+        let stop = Task { try await session.stopSource() }
+        await until { gate.waiting }
+        let cancel = Task { await session.cancel() }
+        await settle()
+        XCTAssertEqual(processor.closeCount, 0)
+        gate.open()
+        await cancel.value
+        do { _ = try await stop.value; XCTFail("cancelled editor published output") }
+        catch is CancellationError { }
+        XCTAssertEqual(session.state, .idle)
+        XCTAssertEqual(session.transcript.text, "original")
+        XCTAssertEqual(processor.closeCount, 1)
+    }
+
+    func testDetectedLanguageSurvivesEditorFailureAndDoesNotTranslateToItself() async throws {
+        let speech = FakeSpeech(), translation = FakeTranslation(), processor = FakePostProcessor()
+        processor.language = "fi"; processor.failProcess = true
+        speech.finalSnapshot = snapshot("Hei, Helsinki!")
+        let session = RecordingSession(makeSpeech: { _ in speech }, translator: translation, postProcessor: processor)
+        try await session.prepare(.init(profile: try .resolve(language: "ru", mode: .fast), target: "fi", postProcessing: true))
+        try await session.start(microphoneUID: nil)
+        let result = try await session.stop()
+        XCTAssertEqual(result.sourceLanguage, "fi")
+        XCTAssertEqual(result.text, "Hei, Helsinki!")
+        XCTAssertEqual(translation.finishTargets, [])
+        XCTAssertNil(result.postProcessingModelID)
     }
 
     func testSourceFinishesBeforeTranslationAndFinalSnapshotWins() async throws {
@@ -436,6 +666,44 @@ import MurmurTranslation
 
 private enum FakeFailure: Error { case translation, preparation, recognition }
 
+@MainActor private final class FakePostProcessor: SessionPostProcessing {
+    var prepareCount = 0, processCount = 0, closeCount = 0
+    var failProcess = false
+    var failPreload = false
+    var failPrepare = false
+    var preloadedLanguages: [String] = []
+    var preloadedModels: [String?] = []
+    var detectorReleaseCount = 0
+    var language: String?
+    var processGate: Gate?
+    var processDelay: Duration?
+    var cancelledProcesses = 0
+    var receivedTranscript: RecordingTranscript?
+    var receivedModelID: String?
+    var output: TranscriptPostProcessingResult?
+    func prepare(progress: @escaping (RecordingSession.Preparation) -> Void) async throws {
+        prepareCount += 1
+        if failPrepare { throw FakeFailure.preparation }
+    }
+    func prepareEditor(language: String, modelID: String?) async throws {
+        preloadedLanguages.append(language); preloadedModels.append(modelID)
+        if failPreload { throw FakeFailure.preparation }
+    }
+    func releaseDetector() async { detectorReleaseCount += 1 }
+    func process(url: URL, transcript: RecordingTranscript, modelID: String?, onLanguage: (String) -> Void) async throws -> TranscriptPostProcessingResult? {
+        processCount += 1; receivedTranscript = transcript; receivedModelID = modelID
+        if let processDelay {
+            do { try await Task.sleep(for: processDelay) }
+            catch { cancelledProcesses += 1; throw error }
+        }
+        if let processGate { await processGate.wait() }
+        if let language = language ?? output?.language { onLanguage(language) }
+        if failProcess { throw FakeFailure.recognition }
+        return output
+    }
+    func close() async { closeCount += 1 }
+}
+
 @MainActor private final class FakeSpeech: SessionSpeechDriving {
     var onSnapshot: ((CaptionSnapshot) -> Void)?
     var onCapture: ((Int, Float) -> Void)?
@@ -451,6 +719,7 @@ private enum FakeFailure: Error { case translation, preparation, recognition }
     var failPrepare = false
     var failStop = false
     var microphone: String?
+    var recordingURL: URL?
     var finalText = ""
     var finalSnapshot = CaptionSnapshot(revision: 0, confirmed: [], provisional: "")
     func prepare(progress: @escaping (RecordingSession.Preparation) -> Void) async throws {
@@ -459,7 +728,7 @@ private enum FakeFailure: Error { case translation, preparation, recognition }
         if failPrepare { throw FakeFailure.preparation }
     }
     func start(microphoneUID: String?, recordingURL: URL?) async throws {
-        startCount += 1; microphone = microphoneUID
+        startCount += 1; microphone = microphoneUID; self.recordingURL = recordingURL
         if let startGate { await startGate.wait() }
     }
     func stop() async throws -> String {
@@ -477,6 +746,7 @@ private enum FakeFailure: Error { case translation, preparation, recognition }
     }
     var residentModelCount: Int { get async { 0 } }
     var preparedTargets: [String] = [], finishTargets: [String] = []
+    var preparedSources: [String] = [], finishSources: [String] = []
     var updates: [Update] = []
     var unloadCount = 0
     var failFinish = false
@@ -485,6 +755,7 @@ private enum FakeFailure: Error { case translation, preparation, recognition }
     func prepare(from: String, to: String, priority: ProcessingQuality,
                  progress: @escaping @MainActor @Sendable (TranslationDownloader.Progress) -> Void) async throws {
         preparedTargets.append(to)
+        preparedSources.append(from)
         if let prepareGate { await prepareGate.wait() }
     }
     func warmUp(from: String, to: String) async throws { }
@@ -497,6 +768,7 @@ private enum FakeFailure: Error { case translation, preparation, recognition }
     func finish(_ utterances: [RecordedUtterance], from: String, to: String,
                 onSegment: @escaping @Sendable (UtteranceTranslation) async -> Void) async throws {
         finishTargets.append(to)
+        finishSources.append(from)
         if let finishGate { await finishGate.wait() }
         if failFinish { throw FakeFailure.translation }
         for utterance in utterances {

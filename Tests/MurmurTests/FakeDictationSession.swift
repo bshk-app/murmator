@@ -14,24 +14,36 @@ final class FakeDictationSession: RecordingSessioning {
     var transcript = RecordingTranscript()
     var startError: Error?
     var translationError: Error?
+    var preparationError: Error?
     var startGate: (() async -> Void)?
     var prepareGate: (() async -> Void)?
+    var rejectConcurrentPreparation = false
+    private var preparing = false
     var unloadGate: (() async -> Void)?
     private(set) var prepareCount = 0
     private(set) var unloadCount = 0
     private(set) var startedMode: DictationMode?
     private(set) var startedLanguage: String?
     private(set) var startCount = 0
+    private(set) var startedMicrophoneUID: String?
     private(set) var stopCount = 0
+    private(set) var skippedPostProcessingCount = 0
     private(set) var finishCount = 0
     private(set) var targets: [String?] = []
 
     func prepare(_ configuration: RecordingSession.Configuration) async throws {
+        if rejectConcurrentPreparation && preparing { throw RecordingSession.LifecycleError.busy }
+        preparing = true
+        defer { preparing = false }
         prepareCount += 1
         state = .preparing
         onEvent?(.preparation(.init(stage: .speech, fraction: nil)))
         await prepareGate?()
         try Task.checkCancellation()
+        if configuration.target != nil {
+            onEvent?(.preparation(.init(stage: .translation, fraction: 0.35)))
+        }
+        if let preparationError { throw preparationError }
         self.configuration = configuration
         ready = true
         state = .ready
@@ -43,6 +55,7 @@ final class FakeDictationSession: RecordingSessioning {
         if let startError { throw startError }
         startedMode = configuration?.profile.mode
         startedLanguage = configuration?.profile.language
+        startedMicrophoneUID = microphoneUID
         startCount += 1
         state = .recording
     }
@@ -51,6 +64,7 @@ final class FakeDictationSession: RecordingSessioning {
         state = .finishing
         return .init(transcript: transcript, duration: capturedSeconds)
     }
+    func skipPostProcessing() { skippedPostProcessingCount += 1 }
     func finishTranslation() async throws -> RecordingSession.Result {
         finishCount += 1
         state = .ready

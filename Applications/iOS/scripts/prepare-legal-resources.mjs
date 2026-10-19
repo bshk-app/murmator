@@ -14,10 +14,36 @@ const sourceZip = path.join(resources, 'BergamotSource.zip');
 const integrations = [
     'Engine/Translation/Patches/build-translation.sh', 'Engine/Translation/Patches/target-arch-ios.patch',
     'Engine/Translation/Patches/ct2-mapped-weights.patch',
+    'Engine/Translation/Patches/marian-shortlist-empty-tail.patch',
+    'Engine/Translation/Scripts/rebuild-bergamot-shortlist.sh',
+    'Engine/Translation/Scripts/rebuild-bergamot-shim.sh',
     'MurmurKit/Sources/CBergamot/murmur_mt.cpp', 'MurmurKit/Sources/CBergamot/murmur_ct2.cpp',
     'MurmurKit/Sources/CBergamot/include/murmur_mt.h', 'MurmurKit/Sources/CBergamot/include/murmur_ct2.h',
     'MurmurKit/Sources/CBergamot/include/module.modulemap', 'LICENSE',
 ];
+
+// Refresh our integration sources while retaining the exact upstream source
+// and revision already offered in the committed archive. This needs neither
+// a developer's build checkout nor unrelated package/notices regeneration.
+if (process.argv.includes('--refresh-integration')) {
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), 'murmator-integration-'));
+    execFileSync('/usr/bin/ditto', ['-x', '-k', sourceZip, staging]);
+    const sourceRoot = path.join(staging, 'BergamotSource');
+    if (!fs.existsSync(path.join(sourceRoot, 'bergamot')) || !fs.existsSync(path.join(sourceRoot, 'README.txt'))) {
+        throw Error('The existing source archive has no upstream source/revision');
+    }
+    for (const file of integrations) {
+        const destination = path.join(sourceRoot, 'integration', file);
+        fs.mkdirSync(path.dirname(destination), {recursive: true});
+        fs.copyFileSync(path.join(repo, file), destination);
+    }
+    const readme = path.join(sourceRoot, 'README.txt');
+    const note = '\nNative shortlist correction: apply integration/Engine/Translation/Patches/marian-shortlist-empty-tail.patch to the pinned Marian dependency before building. The integration/Engine/Translation/Scripts directory contains the corresponding native-library and C-interface rebuild scripts.\n';
+    if (!fs.readFileSync(readme, 'utf8').includes('Native shortlist correction:')) fs.appendFileSync(readme, note);
+    execFileSync('/usr/bin/ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', sourceRoot, sourceZip]);
+    console.log(`Refreshed ${integrations.length} integration sources; retained upstream source and revision.`);
+    process.exit(0);
+}
 
 // --check re-offers no sources; it only asserts the committed archive still matches the repository files it
 // embeds, which is the drift a source change can introduce without touching the archive. Every integration

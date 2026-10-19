@@ -13,7 +13,11 @@ readonly PLIST_BUDDY=/usr/libexec/PlistBuddy
 require_command tuist
 require_command xcodebuild
 require_command ditto
+require_command shasum
+require_command jq
 [[ -x "$PLIST_BUDDY" ]] || die "missing $PLIST_BUDDY"
+[[ -s "$ROOT/.package.resolved" ]] || die ".package.resolved is missing"
+dependency_hash="$(jq -cS '.pins | sort_by(.identity)' "$ROOT/.package.resolved" | shasum -a 256)"
 require_semver APP_VERSION "$SHORT_VERSION"
 [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] \
     || die "BUILD_NUMBER must be an integer, got: $BUILD_NUMBER"
@@ -28,6 +32,11 @@ printf '== generating Murmator %s (%s) ==\n' "$SHORT_VERSION" "$BUILD_NUMBER" >&
     TUIST_APP_BUILD="$BUILD_NUMBER" \
         tuist generate --no-open
 
+    # Tuist links the workspace lock to .package.resolved. Refuse an unexpected
+    # re-resolution instead of shipping a graph different from the tested one.
+    [[ "$(jq -cS '.pins | sort_by(.identity)' "$ROOT/.package.resolved" | shasum -a 256)" == "$dependency_hash" ]] \
+        || die "Tuist changed dependency versions; qualify and commit the new lock first"
+
     TUIST_APP_VERSION="$SHORT_VERSION" \
     TUIST_APP_BUILD="$BUILD_NUMBER" \
         xcodebuild \
@@ -36,6 +45,7 @@ printf '== generating Murmator %s (%s) ==\n' "$SHORT_VERSION" "$BUILD_NUMBER" >&
             -configuration Release \
             -derivedDataPath "$DERIVED_DATA" \
             -destination 'generic/platform=macOS' \
+            -onlyUsePackageVersionsFromResolvedFile \
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=YES \
             SWIFT_ENABLE_EXPLICIT_MODULES=NO \

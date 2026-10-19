@@ -71,15 +71,47 @@ func readWAV(_ data: Data) throws -> [Float] {
 
 @main struct SessionProbe {
     @MainActor static func main() async {
-        do { try await run() }
+        do {
+            let values = Array(CommandLine.arguments.dropFirst())
+            if values.count == 2, ["--detect-language", "--time-language"].contains(values[0]) {
+                let detector = SpeechLanguageDetector()
+                let began = Date()
+                try await detector.prepare()
+                do {
+                    let prepared = Date()
+                    for pass in 0..<(values[0] == "--time-language" ? 2 : 1) {
+                        let start = Date()
+                        let language = try await detector.detect(url: URL(fileURLWithPath: values[1]))
+                        if values[0] == "--time-language" {
+                            let data = try JSONSerialization.data(withJSONObject: ["pass": pass + 1, "prepareSeconds": prepared.timeIntervalSince(began), "detectSeconds": Date().timeIntervalSince(start), "language": language ?? "no speech"])
+                            print(String(decoding: data, as: UTF8.self))
+                        } else { print(language ?? "no speech") }
+                    }
+                    await detector.close()
+                } catch { await detector.close(); throw error }
+                return
+            }
+            if values.count == 2, values[0] == "--batch" {
+                let cases = try JSONDecoder().decode([[String]].self, from: Data(contentsOf: URL(fileURLWithPath: values[1])))
+                var shared: RecordingSession?
+                do {
+                    for args in cases { shared = try await run(values: args, reusing: shared, keepPrepared: true) }
+                    await shared?.unload()
+                } catch { await shared?.unload(); throw error }
+                return
+            }
+            _ = try await run()
+        }
         catch { FileHandle.standardError.write(Data("session-probe: \(error)\n".utf8)); exit(1) }
     }
-    @MainActor static func run() async throws {
+    @MainActor static func run(values supplied: [String]? = nil, reusing shared: RecordingSession? = nil,
+                              keepPrepared: Bool = false) async throws -> RecordingSession? {
         var args: [String: String] = [:]
-        let values = Array(CommandLine.arguments.dropFirst())
+        let values = supplied ?? Array(CommandLine.arguments.dropFirst())
         if values == ["--help"] {
             print("session-probe --wav PCM16.wav --models-root PATH --translation-root PATH --output report.json [--seconds N] [--source ru] [--target en|none] [--mode hybrid|fast|accurate]")
-            return
+            print("session-probe --batch cases.json  (an array of option arrays; prepared models are shared)")
+            return nil
         }
         guard values.count % 2 == 0 else { throw ProbeError("Options require values; use --help") }
         let options: Set<String> = ["--wav", "--models-root", "--translation-root", "--output", "--seconds", "--source", "--target", "--mode"]
@@ -112,7 +144,7 @@ func readWAV(_ data: Data) throws -> [Float] {
         try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
         func write() throws { try encoder.encode(report).write(to: output, options: .atomic) }
         try write()
-        let session = RecordingSession(modelsRoot: models, translationRoot: translation,
+        let session = shared ?? RecordingSession(modelsRoot: models, translationRoot: translation,
             memoryLimit: min(Int(Double(ProcessInfo.processInfo.physicalMemory) * 0.45), 3_500_000_000))
         let began = ProcessInfo.processInfo.systemUptime
         var recordingBegan: Double?
@@ -176,7 +208,9 @@ func readWAV(_ data: Data) throws -> [Float] {
         report.wallSeconds = ProcessInfo.processInfo.systemUptime - began
         var usage = rusage()
         if getrusage(RUSAGE_SELF, &usage) == 0 { report.processPeakRSSBytes = usage.ru_maxrss }
-        try write(); await session.unload()
+        try write()
+        if !keepPrepared { await session.unload() }
         print(output.path)
+        return keepPrepared ? session : nil
     }
 }

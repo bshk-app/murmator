@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Retention for the diagnostic utterance recordings.
 ///
@@ -64,8 +65,7 @@ public enum DiagnosticRecordings {
                 try manager.removeItem(at: victim.url)
                 removed += 1
             } catch {
-                FileHandle.standardError.write(Data(
-                    "Could not remove \(victim.url.lastPathComponent): \(error)\n".utf8))
+                Logger(subsystem: "app.bshk.murmur", category: "diagnostic-audio").error("Could not remove diagnostic audio: domain=\((error as NSError).domain, privacy: .public) code=\((error as NSError).code)")
             }
         }
         return removed

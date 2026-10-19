@@ -25,15 +25,17 @@ public struct RecordedAudio: Codable, Hashable, Sendable {
 /// header is checkpointed on every append, so a killed app leaves playable audio.
 public final class PCMRecordingWriter: @unchecked Sendable {
     public let url: URL
+    public let sampleRate: Int
     private let lock = NSLock()
     private var handle: FileHandle?
     private var samples: UInt64 = 0
     private var synchronizedSamples: UInt64 = 0
-    public init(url: URL) throws {
-        self.url = url
+    public init(url: URL, sampleRate: Int = 16_000) throws {
+        guard (8_000...192_000).contains(sampleRate) else { throw CocoaError(.fileWriteInvalidFileName) }
+        self.url = url; self.sampleRate = sampleRate
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard !FileManager.default.fileExists(atPath: url.path) else { throw CocoaError(.fileWriteFileExists) }
-        try Self.header(bytes: 0).write(to: url, options: .atomic)
+        try Self.header(bytes: 0, sampleRate: sampleRate).write(to: url, options: .atomic)
         #if os(iOS)
         try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path)
         #endif
@@ -56,8 +58,8 @@ public final class PCMRecordingWriter: @unchecked Sendable {
         try handle.write(contentsOf: pcm)
         samples += UInt64(audio.count)
         try handle.seek(toOffset: 0)
-        try handle.write(contentsOf: Self.header(bytes: UInt32(bytes)))
-        if samples - synchronizedSamples >= 16_000 {
+        try handle.write(contentsOf: Self.header(bytes: UInt32(bytes), sampleRate: sampleRate))
+        if samples - synchronizedSamples >= UInt64(sampleRate) {
             try handle.synchronize(); synchronizedSamples = samples
         }
     }
@@ -77,17 +79,19 @@ public final class PCMRecordingWriter: @unchecked Sendable {
         guard let existing = try handle.read(upToCount: 44), existing.count == 44,
               existing.prefix(4) == Data("RIFF".utf8), existing[8..<12] == Data("WAVE".utf8),
               existing[12..<16] == Data("fmt ".utf8), existing[20..<24] == Data([1, 0, 1, 0]),
-              existing[24..<28] == Data([0x80, 0x3e, 0, 0]), existing[34..<36] == Data([16, 0]),
+              existing[34..<36] == Data([16, 0]),
               existing[36..<40] == Data("data".utf8) else { throw CocoaError(.fileReadCorruptFile) }
-        try handle.seek(toOffset: 0); try handle.write(contentsOf: header(bytes: UInt32(count))); try handle.synchronize()
-        return Double(count) / 32_000
+        let rate = existing[24..<28].enumerated().reduce(0) { $0 | (Int($1.element) << ($1.offset * 8)) }
+        guard (8_000...192_000).contains(rate) else { throw CocoaError(.fileReadCorruptFile) }
+        try handle.seek(toOffset: 0); try handle.write(contentsOf: header(bytes: UInt32(count), sampleRate: rate)); try handle.synchronize()
+        return Double(count) / Double(rate * 2)
     }
-    private static func header(bytes: UInt32) -> Data {
+    private static func header(bytes: UInt32, sampleRate: Int) -> Data {
         var data = Data()
         func ascii(_ text: String) { data.append(contentsOf: text.utf8) }
         func integer<T: FixedWidthInteger>(_ value: T) { var little = value.littleEndian; withUnsafeBytes(of: &little) { data.append(contentsOf: $0) } }
         ascii("RIFF"); integer(bytes + 36); ascii("WAVEfmt "); integer(UInt32(16)); integer(UInt16(1)); integer(UInt16(1))
-        integer(UInt32(16_000)); integer(UInt32(32_000)); integer(UInt16(2)); integer(UInt16(16)); ascii("data"); integer(bytes)
+        integer(UInt32(sampleRate)); integer(UInt32(sampleRate * 2)); integer(UInt16(2)); integer(UInt16(16)); ascii("data"); integer(bytes)
         return data
     }
 }

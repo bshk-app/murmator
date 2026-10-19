@@ -81,7 +81,15 @@ public final class CaptionEngine {
             let frame = Array(frameRemainder.prefix(frameSamples))
             frameRemainder.removeFirst(frameSamples)
             let event = policy.frame(isSpeech: isSpeech(frame))
-            if case .opened = event, !epochOpen { beginEpoch() }
+            if case let .opened(startSample) = event, !epochOpen {
+                beginEpoch()
+                // VAD confirms speech after its onset. Recover the retained
+                // earlier PCM for the live model too, not only for the batch
+                // correction. The current frame follows once, below.
+                let frameStart = policy.consumedSamples - frameSamples
+                let preRoll = startSample ..< frameStart
+                if !preRoll.isEmpty { live.step(audio.slice(preRoll)) }
+            }
             if epochOpen { live.step(frame) }
             if let event {
                 apply(event)

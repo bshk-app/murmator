@@ -42,6 +42,47 @@ final class HUDCaretIndicatorTests: XCTestCase {
                        [GhostWord(text: "hello", confirmed: true), GhostWord(text: "world", confirmed: false)])
     }
 
+    func testTheOriginalCaretIndicatorReturnsAfterATransientMissingAnswer() async throws {
+        let hud = HUDController()
+        var lookup = CaretLocator.Lookup.notFound
+        hud.locateCaret = { _ in lookup }
+        hud.caretTrackingInterval = .milliseconds(10)
+        hud.begin(lang: "RU", interactive: true, confirmsWithReturn: true, style: .caret)
+        XCTAssertTrue(hud.model.showsCompactPill)
+        lookup = .found(CaretSpot(caret, font: FieldFont(name: "Helvetica", size: 13)))
+        try await waitUntil { hud.model.showsCaretIndicator }
+        hud.update(confirmed: "", partial: "слова у каретки")
+        let ghost = try XCTUnwrap(hud.model.ghost)
+        XCTAssertEqual(ghost.lines.flatMap(\.words).map(\.text), ["слова", "у", "каретки"])
+        XCTAssertEqual(ghost.markerWidth, HUDController.markerWidth(returnGlyph: true))
+        XCTAssertEqual(ghost.font.fontName, "Helvetica")
+        XCTAssertFalse(hud.model.showStop)
+        XCTAssertFalse(hud.panelTakesClicks)
+        XCTAssertFalse(hud.previewPanelIsVisible)
+        hud.dismiss()
+    }
+
+    func testTheCaretSavedBeforeModelLoadingIsUsedWithoutAnotherInitialLookup() throws {
+        let (hud, asked) = hud(.notFound)
+        let saved = CaretSpot(caret, font: FieldFont(name: "Helvetica", size: 13))
+        hud.begin(lang: "RU", confirmsWithReturn: true, style: .caret, initialCaret: .found(saved))
+        XCTAssertEqual(asked(), 0)
+        XCTAssertTrue(hud.model.showsCaretIndicator)
+        let line = try XCTUnwrap(hud.model.ghost?.lines.first)
+        XCTAssertEqual(line.origin.x, caret.minX)
+        XCTAssertTrue(line.hasMarker)
+        hud.dismiss()
+    }
+
+    func testAStalledInitialCaretLookupIsNotPolled() async throws {
+        let (hud, asked) = hud(.stalled)
+        hud.caretTrackingInterval = .milliseconds(10)
+        hud.begin(lang: "RU", style: .caret)
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(asked(), 1)
+        hud.dismiss()
+    }
+
     /// The field's type is asked for once, when the take starts.
     func testTheFieldsTypeIsReadOnceAndUsed() async throws {
         let hud = HUDController()
@@ -76,6 +117,52 @@ final class HUDCaretIndicatorTests: XCTestCase {
             XCTAssertTrue(hud.model.showStop, "the capsule keeps its Stop button")
             XCTAssertTrue(hud.panelTakesClicks)
         }
+    }
+
+    func testAnUnavailableCaretStillShowsTheLiveDraftBesideTheCapsule() throws {
+        for lookup in [CaretLocator.Lookup.notFound, .stalled] {
+            let (hud, _) = hud(lookup)
+            hud.begin(lang: "RU", interactive: true, style: .caret)
+            let capsule = try XCTUnwrap(hud.panelFrame)
+            hud.update(confirmed: "точные слова", partial: "быстрый черновик")
+            let draft = try XCTUnwrap(hud.model.ghost, "A missing AX caret must not hide the realtime text")
+            XCTAssertEqual(draft.lines.flatMap(\.words).map(\.text),
+                           ["точные", "слова", "быстрый", "черновик"])
+            XCTAssertEqual(hud.panelFrame, capsule, "The compact controls must keep their size and position")
+            XCTAssertTrue(hud.previewPanelIsVisible)
+            XCTAssertFalse(hud.previewPanelTakesClicks)
+            let preview = try XCTUnwrap(hud.previewPanelFrame)
+            hud.finalizing()
+            hud.update(confirmed: "готовый точный результат", partial: "")
+            XCTAssertEqual(hud.model.ghost?.lines.flatMap(\.words).map(\.text), ["готовый", "точный", "результат"])
+            XCTAssertEqual(hud.previewPanelFrame, preview)
+            XCTAssertEqual(hud.panelFrame, capsule)
+            hud.dismiss()
+            XCTAssertFalse(hud.previewPanelIsVisible)
+        }
+    }
+
+    func testExplicitCompactStyleKeepsItsStatusOnlyPresentation() {
+        let (hud, _) = hud(.notFound)
+        hud.begin(lang: "RU", style: .compact)
+        hud.update(confirmed: "", partial: "быстрый черновик")
+        XCTAssertTrue(hud.model.showsCompactPill)
+        XCTAssertNil(hud.model.ghost)
+        XCTAssertFalse(hud.previewPanelIsVisible)
+        hud.dismiss()
+    }
+
+    func testFallbackDraftDisappearsBeforeTheNextUtteranceAndAfterDelivery() {
+        let (hud, _) = hud(.notFound)
+        hud.begin(lang: "RU", style: .caret)
+        hud.update(confirmed: "", partial: "первая запись")
+        XCTAssertTrue(hud.previewPanelIsVisible)
+        hud.begin(lang: "RU", style: .caret)
+        XCTAssertNil(hud.model.ghost)
+        XCTAssertFalse(hud.previewPanelIsVisible)
+        hud.update(confirmed: "", partial: "вторая запись")
+        hud.finish("точный результат", delivery: .typed)
+        XCTAssertFalse(hud.previewPanelIsVisible)
     }
 
     func testOtherStylesDoNotAskForTheCaret() {

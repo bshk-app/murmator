@@ -93,4 +93,15 @@ private actor TextEngineProbe: TextTranslationEngine {
         sut.setTarget("en")
         XCTAssertTrue(sut.output.isEmpty); XCTAssertEqual(sut.input, "Hello")
     }
+    func testServiceLimitCountsUnicodeCodePointsInsteadOfGraphemes() {
+        let sut = TextTranslationModel(engine: TextEngineProbe(), source: "ru", target: "fi",
+            availableTargets: { _ in ["fi"] }, maximumCharacters: 2)
+        sut.input = "e\u{301}"
+        XCTAssertEqual(sut.input.count, 1)
+        XCTAssertEqual(sut.inputCharacters, 2)
+        XCTAssertTrue(sut.canTranslate)
+        sut.input += "!"
+        XCTAssertFalse(sut.canTranslate)
+        XCTAssertNil(sut.start())
+    }
 }

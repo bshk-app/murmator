@@ -75,10 +75,26 @@ final class RecordingPersistenceTests: XCTestCase {
         var note = VoiceNote(text: "complete meeting", sourceLanguage: "fi", duration: 1200, model: "test")
         note.transcriptionComplete = true; note.captureRevision = 9
         try await repo.save(note)
-        note.text = "last two minutes"; note.transcriptionComplete = false; note.captureRevision = 8
+        note.text = "last two minutes"; note.transcriptionComplete = false
         try await repo.saveProgress(note)
         let saved = try await repo.all()
         XCTAssertEqual(saved.first?.text, "complete meeting")
+    }
+    func testOlderCaptureRevisionCannotOverwriteNewerDraft() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repo = NoteRepository(directory: root)
+        var note = VoiceNote(text: "draft at nine", sourceLanguage: "fi", duration: 600, model: "test")
+        note.captureRevision = 9
+        try await repo.save(note)
+        note.text = "stale draft"; note.captureRevision = 8
+        try await repo.saveProgress(note)
+        var saved = try await repo.all()
+        XCTAssertEqual(saved.first?.text, "draft at nine")
+        note.text = "draft at ten"; note.captureRevision = 10
+        try await repo.saveProgress(note)
+        saved = try await repo.all()
+        XCTAssertEqual(saved.first?.text, "draft at ten", "a newer revision must still be saved")
     }
     func testNotesWithoutAudioOrVersionsRoundTrip() throws {
         let note = VoiceNote(text: "Text only", sourceLanguage: "fi", duration: 10, model: "test")

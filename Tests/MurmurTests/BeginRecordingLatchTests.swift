@@ -2,14 +2,8 @@ import XCTest
 @testable import Murmur
 @testable import MurmurKit
 
-/// What `beginRecording` latches, proved by running it.
-///
-/// `DictationSourceLatchTests` and `CompletedModelModeTests` cover the other
-/// half - that a latched value beats the live setting. Both had a hole they
-/// documented rather than hid: nothing checked that `beginRecording` performs
-/// the latch at all, because reaching it needed loaded models and a real
-/// microphone. Deleting either assignment left those suites green. This is
-/// that hole, closed by substituting the session.
+/// What `beginRecording` latches, proved by running it with a substituted
+/// session, and that a latched value beats a later change to the setting.
 ///
 /// The assertions are deliberately written against what the *recogniser was
 /// handed* as well as what was latched, because the bug being prevented is
@@ -21,8 +15,8 @@ final class BeginRecordingLatchTests: XCTestCase {
 
     override func setUpWithError() throws {
         for key in keys { saved[key] = UserDefaults.standard.object(forKey: key) }
-        // Dictation, not captions: `beginRecording` hands off to `beginCaptions`
-        // otherwise and latches nothing.
+        // Dictation, not captions: pinned so the run does not depend on the
+        // mode the developer last used.
         UserDefaults.standard.set(AppMode.dictation.rawValue, forKey: AppMode.defaultsKey)
     }
 
@@ -89,6 +83,10 @@ final class BeginRecordingLatchTests: XCTestCase {
         let (controller, fake) = await record(language: "ru", model: .hybrid)
         XCTAssertEqual(fake.startedMode, .hybrid)
         XCTAssertEqual(controller.dictationMode, .hybrid)
+
+        // Switching Model mid-utterance must not relabel the one that ran.
+        UserDefaults.standard.set(DictationMode.accurate.rawValue, forKey: ModelSetting.key)
+        XCTAssertEqual(controller.completedModelMode, .hybrid)
     }
 
     /// A session that never started must not leave a latch behind claiming it
@@ -107,17 +105,39 @@ final class BeginRecordingLatchTests: XCTestCase {
     }
 
     /// Not ready means the press is spent on loading and no utterance begins.
-    func testAnUnreadySessionLatchesNothing() async {
+    func testAnUnreadySessionLatchesOnlyAfterTheMicrophoneStarts() async {
         UserDefaults.standard.set("ru", forKey: SpeechLanguage.defaultsKey)
         let controller = DictationController()
         let fake = FakeDictationSession()
         fake.ready = false
+        var resume: CheckedContinuation<Void, Never>?
+        fake.prepareGate = { await withCheckedContinuation { resume = $0 } }
         controller.session = fake
         controller.beginRecording(submit: false)
-        await controller.recordingTask?.value
-
+        for _ in 0..<1_000 {
+            if resume != nil { break }
+            await Task.yield()
+        }
+        XCTAssertNotNil(resume)
         XCTAssertEqual(fake.startCount, 0)
         XCTAssertNil(controller.dictationSource)
         XCTAssertNil(controller.dictationMode)
+        resume?.resume()
+        await controller.recordingTask?.value
+        XCTAssertEqual(fake.startCount, 1)
+        XCTAssertEqual(controller.dictationSource, fake.startedLanguage)
+        XCTAssertEqual(controller.dictationMode, fake.startedMode)
+    }
+
+    /// Nothing ran, so the live settings are the only answer available.
+    func testWithoutALatchTheCurrentSettingsAreUsed() {
+        UserDefaults.standard.set("de", forKey: SpeechLanguage.defaultsKey)
+        UserDefaults.standard.set(DictationMode.fast.rawValue, forKey: ModelSetting.key)
+        let controller = DictationController()
+
+        XCTAssertNil(controller.dictationSource)
+        XCTAssertNil(controller.dictationMode)
+        XCTAssertEqual(controller.translationSource, "de")
+        XCTAssertEqual(controller.completedModelMode, .fast)
     }
 }

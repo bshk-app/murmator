@@ -261,7 +261,7 @@ private actor PhoneStreamingEngine {
                 return Device.withDefaultDevice(.gpu) { lane.vad.isSpeech(frame) }
             },
             batch: { _, _ in "" },
-            maxEpochSeconds: usesGPUBatch ? 28 : 4,
+            maxEpochSeconds: mode.maxEpochSeconds(batchUsesGPU: usesGPUBatch),
             enqueueCorrection: { id, range, audio in lane.corrections.append((id, range, audio)) }
         )
         currentMode = mode

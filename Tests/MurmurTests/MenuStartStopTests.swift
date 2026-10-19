@@ -8,7 +8,8 @@ import XCTest
 final class MenuStartStopTests: XCTestCase {
     private var saved: [String: Any?] = [:]
     private let keys = [AppMode.defaultsKey, TriggerMode.defaultsKey, ModelSetting.key,
-                        SpeechLanguage.defaultsKey, TranslationSetting.key]
+                        SpeechLanguage.defaultsKey, TranslationSetting.key, ModelLoadingPolicy.key,
+                        RightCommandTrigger.key, DictationEnabled.key]
 
     override func setUpWithError() throws {
         for key in keys { saved[key] = UserDefaults.standard.object(forKey: key) }
@@ -16,6 +17,9 @@ final class MenuStartStopTests: XCTestCase {
         UserDefaults.standard.set(TriggerMode.hold.rawValue, forKey: TriggerMode.defaultsKey)
         UserDefaults.standard.set("en", forKey: SpeechLanguage.defaultsKey)
         UserDefaults.standard.set(TranslationSetting.off, forKey: TranslationSetting.key)
+        UserDefaults.standard.set(ModelLoadingPolicy.atLaunch.rawValue, forKey: ModelLoadingPolicy.key)
+        UserDefaults.standard.set(true, forKey: RightCommandTrigger.key)
+        UserDefaults.standard.set(true, forKey: DictationEnabled.key)
     }
 
     override func tearDownWithError() throws {
@@ -32,6 +36,7 @@ final class MenuStartStopTests: XCTestCase {
         UserDefaults.standard.set(mode.rawValue, forKey: AppMode.defaultsKey)
         let fake = FakeDictationSession()
         let controller = DictationController(session: fake)
+        controller.companion.waitDelay = 0
         return (controller, fake)
     }
 
@@ -63,6 +68,7 @@ final class MenuStartStopTests: XCTestCase {
 
     func testModelPreparationDoesNotClaimMicrophoneIsListening() async {
         let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
         let gate = ModelLoadGate()
         fake.prepareGate = { await gate.wait() }
         controller.toggleFromMenu()
@@ -74,6 +80,84 @@ final class MenuStartStopTests: XCTestCase {
         gate.open()
         await controller.recordingTask?.value
         XCTAssertEqual(controller.state, .recording)
+        controller.cancelRecording()
+        await controller.recordingTask?.value
+    }
+
+    func testFirstRightCommandTapContinuesFromColdModelsIntoRecording() async {
+        let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
+        let gate = ModelLoadGate()
+        fake.prepareGate = { await gate.wait() }
+        controller.handle(.rightCommandTap)
+        await until { gate.waiting }
+        XCTAssertTrue(controller.isStartingRecording, "the first tap must own the pending dictation")
+        XCTAssertTrue(controller.companion.isVisible)
+        XCTAssertEqual(controller.companion.model.phase, .preparing)
+        XCTAssertEqual(controller.companion.model.message, "Loading speech model…")
+        XCTAssertEqual(fake.startCount, 0)
+        gate.open()
+        await until { controller.state == .recording || controller.state == .idle }
+        await controller.recordingTask?.value
+        XCTAssertEqual(fake.startCount, 1, "a cold first tap must not only load models and disappear")
+        controller.cancelRecording()
+        await controller.recordingTask?.value
+    }
+
+    func testTapDuringBackgroundLoadingWaitsAndStartsRecording() async {
+        let (controller, fake) = controller(mode: .dictation)
+        let gate = ModelLoadGate()
+        fake.prepareGate = { if fake.prepareCount == 1 { await gate.wait() } }
+        controller.prepareCurrentMode()
+        await until { gate.waiting }
+        controller.handle(.rightCommandTap)
+        XCTAssertTrue(controller.companion.isVisible)
+        gate.open()
+        await controller.recordingTask?.value
+        XCTAssertEqual(fake.startCount, 1)
+        controller.cancelRecording()
+        await controller.recordingTask?.value
+    }
+
+    func testReleaseHeldRightCommandDuringColdPreparationCancelsTheAttempt() async {
+        let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
+        let gate = ModelLoadGate()
+        fake.prepareGate = { await gate.wait() }
+        controller.handle(.rightCommandHeld)
+        await until { gate.waiting }
+        controller.handle(.rightCommandReleased)
+        XCTAssertFalse(controller.companion.isVisible)
+        gate.open()
+        await until { controller.state == .modelsUnloaded }
+        XCTAssertEqual(fake.startCount, 0)
+    }
+
+    func testColdPreparationErrorIsShownBesideTheCursor() async {
+        let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
+        fake.preparationError = NSError(domain: "model", code: 1,
+                                       userInfo: [NSLocalizedDescriptionKey: "Model unavailable"])
+        controller.handle(.rightCommandTap)
+        await controller.recordingTask?.value
+        XCTAssertEqual(controller.state, .error("Model unavailable"))
+        XCTAssertTrue(controller.companion.isVisible)
+        XCTAssertEqual(controller.companion.model.phase, .error)
+        XCTAssertEqual(controller.companion.model.message, "Model unavailable")
+        XCTAssertEqual(fake.startCount, 0)
+    }
+
+    func testOnDemandDoesNotPrepareUntilTheFirstDictation() async {
+        let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
+        UserDefaults.standard.set(ModelLoadingPolicy.onDemand.rawValue, forKey: ModelLoadingPolicy.key)
+        controller.prepareCurrentMode()
+        controller.prepareTranslation()
+        await Task.yield()
+        XCTAssertEqual(fake.prepareCount, 0)
+        controller.handle(.rightCommandTap)
+        await controller.recordingTask?.value
+        XCTAssertEqual(fake.startCount, 1)
         controller.cancelRecording()
         await controller.recordingTask?.value
     }
@@ -108,6 +192,21 @@ final class MenuStartStopTests: XCTestCase {
         await controller.recordingTask?.value
         XCTAssertEqual(fake.stopCount, 1)
         XCTAssertNotEqual(controller.state, .recording)
+    }
+
+    func testPreparedSessionDoesNotShowModelLoadingDuringMicrophoneStartup() async {
+        let (controller, fake) = controller(mode: .dictation)
+        let gate = ModelLoadGate()
+        fake.startGate = { await gate.wait() }
+        controller.toggleFromMenu()
+        XCTAssertFalse(controller.isManagingModels, "a ready session should open a microphone without flashing model loading")
+        await until { gate.waiting }
+        XCTAssertEqual(controller.state, .startingRecording)
+        XCTAssertFalse(controller.isManagingModels)
+        gate.open()
+        await controller.recordingTask?.value
+        controller.cancelRecording()
+        await controller.recordingTask?.value
     }
 
     func testCancelLoadingWaitsForBothPreparationAndMemoryRelease() async {
@@ -150,6 +249,7 @@ final class MenuStartStopTests: XCTestCase {
 
     func testCancelStartDuringModelPreparationNeverOpensMicrophone() async {
         let (controller, fake) = controller(mode: .dictation)
+        fake.ready = false
         let gate = ModelLoadGate()
         fake.prepareGate = { await gate.wait() }
         controller.toggleFromMenu()
