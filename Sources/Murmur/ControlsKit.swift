@@ -536,7 +536,8 @@ enum StatusIconRenderer {
             let accent = NSColor(red: 0xE8 / 255, green: 0x89 / 255, blue: 0x3B / 255, alpha: 1)
             if bars {
                 accent.setFill()
-                for (i, height) in (state == .listening ? [6.0, 11, 8] : [4.0, 4, 4]).enumerated() {
+                let heights: [CGFloat] = state == .listening ? [6, 11, 8] : [4, 4, 4]
+                for (i, height) in heights.enumerated() {
                     NSBezierPath(roundedRect: NSRect(x: 18.5 + Double(i) * 2.8, y: 3.5, width: 2, height: height),
                                  xRadius: 1, yRadius: 1).fill()
                 }
