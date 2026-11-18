@@ -41,9 +41,9 @@ let project = Project(
         .remote(url: "https://github.com/sindresorhus/KeyboardShortcuts",
                 requirement: .upToNextMajor(from: "2.0.0")),
         .remote(url: "https://github.com/PostHog/posthog-ios",
-                requirement: .upToNextMajor(from: "3.0.0")),   // anonymous usage/error analytics (opt-out)
+                requirement: .upToNextMajor(from: "3.94.0")),  // anonymous usage/error analytics (opt-out)
         .remote(url: "https://github.com/sparkle-project/Sparkle",
-                requirement: .upToNextMajor(from: "2.6.0")),   // in-app auto-update (appcast + EdDSA)
+                requirement: .upToNextMajor(from: "2.9.6")),   // in-app auto-update (appcast + EdDSA)
     ],
     targets: [
         .target(
