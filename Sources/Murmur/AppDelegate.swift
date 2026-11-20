@@ -51,11 +51,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, SPUS
         // an inert host: they link the code without the app coming to life.
         if NSClassFromString("XCTestCase") != nil { return }
         // Analytics is optional: no API key → never initialize (e.g. a privacy/App
-        // Store build); key present but consent off → set up then opt out, which makes
-        // every `capture(…)` a no-op. Audio/transcripts are never sent regardless.
+        // Store build); key present but consent off → set up already opted out, which
+        // makes every `capture(…)` a no-op. Audio/transcripts are never sent regardless.
         if !posthogApiKey.isEmpty {
             let config = PostHogConfig(apiKey: posthogApiKey, host: posthogHost)
             config.captureApplicationLifecycleEvents = true
+            // `setup` installs the lifecycle integration, which captures "Application
+            // Installed" there and then — an `optOut()` after it is too late. Opting in
+            // later installs it, so a consenting user's install is still recorded.
+            config.optOut = !AnalyticsConsent.enabled
             PostHogSDK.shared.setup(config)
             // Sync PostHog to our consent (opt-in: off until enabled on Welcome).
             if AnalyticsConsent.enabled { PostHogSDK.shared.optIn() } else { PostHogSDK.shared.optOut() }
